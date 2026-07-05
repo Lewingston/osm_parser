@@ -1,6 +1,11 @@
 
 mod parser;
 
+use std::collections::HashSet;
+
+use osm_parser::map::Feature;
+use osm_parser::map::FeatureSubType;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let data = parser::from_file("bingen.json")?;
@@ -25,6 +30,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Relation count: {}", data.relations.len());
     println!("    Relations with tags: {rel_with_tags}");
     println!("    Relations without tags: {rel_without_tags}");
+
+    let mut features = HashSet::<Feature>::new();
+
+    for (_, node) in data.nodes {
+
+        let Some(tags) = node.tags else { continue };
+
+        for feat in tags.features {
+            features.insert(feat);
+        }
+    }
+
+    for (_, way) in data.ways {
+
+        let Some(tags) = way.tags else { continue };
+
+        for feat in tags.features {
+            features.insert(feat);
+        }
+    }
+
+    for (_, relation) in data.relations {
+
+        let Some(tags) = relation.tags else { continue };
+
+        for feat in tags.features {
+            features.insert(feat);
+        }
+    }
+
+    println!("Number of different features: {}", features.len());
+    for feat in features {
+
+        println!("{} - {}", feat, feat.subtype_to_string());
+    }
 
     Ok(())
 }

@@ -1,6 +1,7 @@
 
 use osm_parser::map::Tags;
 use osm_parser::map::Feature;
+use osm_parser::map::FeatureSubType;
 
 use serde_json::Value;
 
@@ -26,7 +27,25 @@ pub fn parse(tags: &Value) -> Option<Tags> {
 
 fn get_features(tags: &JsonObj) -> Vec<Feature> {
 
-    Feature::iter().
-        filter(|feature| tags.get(&feature.to_string()).is_some()).
-        collect()
+    let mut features = Vec::<Feature>::new();
+
+    for feature in Feature::iter() {
+
+        let feature_name = feature.to_string();
+
+        let Some(feat_attr) = tags.get(&feature_name) else { continue };
+        let Some(feat_attr) = feat_attr.as_str() else {
+            println!("Map feature attribute is not a string: {feature}");
+            continue
+        };
+
+        feature.create(feat_attr);
+
+        match feature.create(feat_attr) {
+            Some(feature) => features.push(feature),
+            None => { println!("{feature_name} - {feat_attr}"); }
+        }
+    }
+
+    features
 }
