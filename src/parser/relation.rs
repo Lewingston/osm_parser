@@ -3,6 +3,8 @@ use osm_parser::map::Relation;
 
 use serde_json::Value;
 
+use crate::parser::tags;
+
 type JsonObj = serde_json::Map<String, Value>;
 
 pub fn parse(relation: &JsonObj) -> Option<Relation> {
@@ -12,7 +14,10 @@ pub fn parse(relation: &JsonObj) -> Option<Relation> {
         return None
     };
 
+    let tags = relation.get("tags").and_then(tags::parse);
+
     Some(Relation {
-        id
+        id,
+        tags
     })
 }

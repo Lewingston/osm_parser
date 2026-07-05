@@ -3,6 +3,8 @@ use osm_parser::map::Node;
 
 use serde_json::Value;
 
+use crate::parser::tags;
+
 type JsonObj = serde_json::Map<String, Value>;
 
 pub fn parse(node: &JsonObj) -> Option<Node> {
@@ -22,9 +24,12 @@ pub fn parse(node: &JsonObj) -> Option<Node> {
         return None
     };
 
+    let tags = node.get("tags").and_then(tags::parse);
+
     Some(Node {
         id,
         latitude,
-        longitude
+        longitude,
+        tags
     })
 }

@@ -5,9 +5,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let data = parser::from_file("bingen.json")?;
 
+    let nodes_with_tags = data.nodes.iter().filter(|(_, node)| node.tags.is_some()).count();
+    let nodes_without_tags = data.nodes.iter().filter(|(_, node)| node.tags.is_none()).count();
+
     println!("Node count: {}", data.nodes.len());
+    println!("    Nodes with tags: {nodes_with_tags}");
+    println!("    Nodes without tags: {nodes_without_tags}");
+
+    let ways_with_tags = data.ways.iter().filter(|(_, way)| way.tags.is_some()).count();
+    let ways_without_tags = data.ways.iter().filter(|(_, way)| way.tags.is_none()).count();
+
     println!("Way count: {}", data.ways.len());
+    println!("    Ways with tags: {ways_with_tags}");
+    println!("    Ways without tags: {ways_without_tags}");
+
+    let rel_with_tags = data.relations.iter().filter(|(_, rel)| rel.tags.is_some()).count();
+    let rel_without_tags = data.relations.iter().filter(|(_, rel)| rel.tags.is_none()).count();
+
     println!("Relation count: {}", data.relations.len());
+    println!("    Relations with tags: {rel_with_tags}");
+    println!("    Relations without tags: {rel_without_tags}");
 
     Ok(())
 }

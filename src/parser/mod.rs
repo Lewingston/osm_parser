@@ -2,6 +2,7 @@
 mod node;
 mod way;
 mod relation;
+mod tags;
 
 use osm_parser::map::{
     MapData,
