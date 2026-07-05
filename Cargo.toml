@@ -8,3 +8,4 @@ serde_json = "1.0"
 strum = "0.28"
 strum_macros = "0.28"
 enum_dispatch = "0.3.13"
+osm_parser_macros = { path = "./osm_parser_macros" }

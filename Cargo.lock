@@ -43,9 +43,18 @@ name = "osm_parser"
 version = "0.1.0"
 dependencies = [
  "enum_dispatch",
+ "osm_parser_macros",
  "serde_json",
  "strum",
  "strum_macros",
+]
+
+[[package]]
+name = "osm_parser_macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

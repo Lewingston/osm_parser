@@ -66,5 +66,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{} - {}", feat, feat.subtype_to_string());
     }
 
+    /*
+    println!("Relations without map feature:");
+    for (_, relation) in data.relations {
+
+        let Some(tags) = relation.tags else { continue };
+
+        if tags.features.is_empty() {
+            println!("Relation: {}", relation.id);
+        }
+    }
+    */
+
     Ok(())
 }
