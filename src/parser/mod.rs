@@ -44,8 +44,8 @@ pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>>
 
             let Some(result) = parse_element(element) else { continue };
             match result {
-                OsmPrimitive::Node(node)         => { data.nodes.insert(node.id, node); },
-                OsmPrimitive::Way(way)           => { data.ways.insert(way.id, way); },
+                OsmPrimitive::Node    (node)     => { data.nodes    .insert(node.id,     node    ); },
+                OsmPrimitive::Way     (way)      => { data.ways     .insert(way.id,      way     ); },
                 OsmPrimitive::Relation(relation) => { data.relations.insert(relation.id, relation); }
             }
         }
