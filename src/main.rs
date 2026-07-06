@@ -4,7 +4,7 @@ mod parser;
 use std::collections::HashSet;
 
 use osm_parser::map::Feature;
-use osm_parser::map::FeatureSubType;
+//use osm_parser::map::FeatureSubType;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
@@ -33,9 +33,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut features = HashSet::<Feature>::new();
 
+    let mut num_nodes_without_feat     = 0;
+    let mut num_ways_without_feat      = 0;
+    let mut num_relations_without_feat = 0;
+
     for (_, node) in data.nodes {
 
         let Some(tags) = node.tags else { continue };
+
+        if tags.features.is_empty() {
+            num_nodes_without_feat += 1;
+        }
 
         for feat in tags.features {
             features.insert(feat);
@@ -46,6 +54,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let Some(tags) = way.tags else { continue };
 
+        if tags.features.is_empty() {
+            num_ways_without_feat += 1;
+        }
+
         for feat in tags.features {
             features.insert(feat);
         }
@@ -55,16 +67,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let Some(tags) = relation.tags else { continue };
 
+        if tags.features.is_empty() {
+            num_relations_without_feat += 1;
+        }
+
         for feat in tags.features {
             features.insert(feat);
         }
     }
 
     println!("Number of different features: {}", features.len());
+    println!("Number of nodes without feature: {num_nodes_without_feat}");
+    println!("Number of ways without feature: {num_ways_without_feat}");
+    println!("Number of relations without feature: {num_relations_without_feat}");
+
+    /*
     for feat in features {
 
-        println!("{} - {}", feat, feat.subtype_to_string());
+        println!("{}", feat.subtype_to_string());
     }
+    */
 
     /*
     println!("Relations without map feature:");

@@ -21,7 +21,9 @@ pub fn feature_sub_type_derive(input: TokenStream) -> TokenStream {
 
             fn subtype_to_string(&self) -> String {
 
-                self.to_string()
+                let feat = Feature::#name(self.clone());
+
+                format!("{} - {}", feat.to_string(), self.to_string())
             }
         }
     };
@@ -50,7 +52,8 @@ pub fn feature_sub_type(_attr: TokenStream, item: TokenStream) -> TokenStream {
             EnumString,
             PartialEq,
             Eq,
-            Hash
+            Hash,
+            Clone
         )]
         #[strum(serialize_all = "snake_case")]
         #vis enum #ident #generics {
