@@ -13,6 +13,8 @@ use osm_parser::map::{
 
 use serde_json::{Deserializer, Value};
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 enum OsmPrimitive {
     Node(Node),
@@ -28,9 +30,9 @@ pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>>
     let stream = Deserializer::from_reader(reader).into_iter::<Value>();
 
     let mut data = MapData {
-        nodes:     HashMap::<u64, Node>::new(),
-        ways:      HashMap::<u64, Way>::new(),
-        relations: HashMap::<u64, Relation>::new()
+        nodes:     HashMap::<u64, Rc<RefCell<Node>>>::new(),
+        ways:      HashMap::<u64, Rc<RefCell<Way>>>::new(),
+        relations: HashMap::<u64, Rc<RefCell<Relation>>>::new()
     };
 
     for value in stream {
@@ -45,12 +47,21 @@ pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>>
 
             let Some(result) = parse_element(element) else { continue };
             match result {
-                OsmPrimitive::Node    (node)     => { data.nodes    .insert(node.id,     node    ); },
-                OsmPrimitive::Way     (way)      => { data.ways     .insert(way.id,      way     ); },
-                OsmPrimitive::Relation(relation) => { data.relations.insert(relation.id, relation); }
+                OsmPrimitive::Node(node) => {
+                    data.nodes.insert(node.id, Rc::new(RefCell::new(node)));
+                },
+                OsmPrimitive::Way(way) => {
+                    data.ways.insert(way.id, Rc::new(RefCell::new(way)));
+                },
+                OsmPrimitive::Relation(relation) => {
+                    data.relations.insert(relation.id, Rc::new(RefCell::new(relation)));
+                }
             }
         }
     }
+
+    construct_ways(&mut data);
+    construct_relations(&mut data);
 
     Ok(data)
 }
@@ -77,4 +88,23 @@ fn parse_element(element: &serde_json::Value) -> Option<OsmPrimitive> {
             None
         }
     }
+}
+
+
+fn construct_ways(map: &mut MapData) {
+
+    for way in &mut map.ways.values_mut() {
+
+        construct_way(&mut way.borrow_mut(), &mut map.nodes);
+    }
+}
+
+
+fn construct_way(_way: &mut Way, _nodes:& mut HashMap<u64, Rc<RefCell<Node>>>) {
+
+}
+
+
+fn construct_relations(_map: &mut MapData) {
+
 }

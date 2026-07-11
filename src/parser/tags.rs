@@ -39,8 +39,6 @@ fn get_features(tags: &JsonObj) -> Vec<Feature> {
             continue
         };
 
-        feature.create(feat_attr);
-
         match feature.create(feat_attr) {
             Some(feature) => features.push(feature),
             None => { println!("{feature_name} - {feat_attr}"); }

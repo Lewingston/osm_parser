@@ -1,11 +1,29 @@
 
 use osm_parser::map::Relation;
+use osm_parser::map::RelationMembers;
+use osm_parser::map::RelationNode;
+use osm_parser::map::RelationWay;
+use osm_parser::map::RelationRelation;
+use osm_parser::map::RelationMemberRole;
+
+use std::collections::HashMap;
+use std::str::FromStr;
 
 use serde_json::Value;
 
 use crate::parser::tags;
 
 type JsonObj = serde_json::Map<String, Value>;
+type JsonArray = Vec<Value>;
+
+
+enum RelationMember {
+    Undefined,
+    Node(RelationNode, u64),
+    Way(RelationWay, u64),
+    Relation(RelationRelation, u64)
+}
+
 
 pub fn parse(relation: &JsonObj) -> Option<Relation> {
 
@@ -16,8 +34,86 @@ pub fn parse(relation: &JsonObj) -> Option<Relation> {
 
     let tags = relation.get("tags").and_then(tags::parse);
 
+    let Some(member_array) = relation.get("members").and_then(Value::as_array) else {
+        println!("Relation has no members");
+        return None
+    };
+
+    let members = parse_members(member_array);
+
     Some(Relation {
         id,
-        tags
+        tags,
+        members
     })
+}
+
+
+fn parse_members(members: &JsonArray) -> RelationMembers {
+
+    let mut result = RelationMembers {
+        nodes:     HashMap::<u64, RelationNode>::new(),
+        ways:      HashMap::<u64, RelationWay>::new(),
+        relations: HashMap::<u64, RelationRelation>::new()
+    };
+
+    for member in members {
+
+        let Some(member_obj) = member.as_object() else {
+            println!("Relation member is not an JSON object!");
+            continue;
+        };
+
+        match parse_member(member_obj) {
+
+            RelationMember::Node(node, id) => {
+                result.nodes.insert(id, node);
+            },
+            RelationMember::Way(way, id) => {
+                result.ways.insert(id, way);
+            },
+            RelationMember::Relation(relation, id) => {
+                result.relations.insert(id, relation);
+            },
+            RelationMember::Undefined => {
+                println!("Unable to parse relation member!");
+            }
+        }
+    }
+
+    result
+}
+
+
+fn parse_member(data: &JsonObj) -> RelationMember {
+
+    let Some(member_type) = data.get("type").and_then(Value::as_str) else {
+        println!("Relation member has no type!");
+        return RelationMember::Undefined;
+    };
+
+    let role_string = data.get("role").and_then(Value::as_str).unwrap_or("");
+
+    let role = if let Ok(role) = RelationMemberRole::from_str(role_string) { role } else {
+        println!("Unknown relation member role: {role_string}");
+        RelationMemberRole::None
+    };
+
+    let Some(id) = data.get("ref").and_then(Value::as_u64) else {
+        println!("Relation member has no id!");
+        return RelationMember::Undefined;
+    };
+
+    match member_type {
+        "node" => {
+            RelationMember::Node(RelationNode{node: None, role}, id)
+        },
+        "way" => {
+            RelationMember::Way(RelationWay{way: None, role}, id)
+        },
+        "relation" => {
+            RelationMember::Relation(RelationRelation{relation: None, role}, id)
+        }
+        _ => { RelationMember::Undefined }
+    }
 }

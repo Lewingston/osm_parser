@@ -10,22 +10,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let data = parser::from_file("bingen.json")?;
 
-    let nodes_with_tags = data.nodes.iter().filter(|(_, node)| node.tags.is_some()).count();
-    let nodes_without_tags = data.nodes.iter().filter(|(_, node)| node.tags.is_none()).count();
+    let nodes_with_tags = data.nodes.iter().filter(|(_, node)| node.borrow().tags.is_some()).count();
+    let nodes_without_tags = data.nodes.iter().filter(|(_, node)| node.borrow().tags.is_none()).count();
 
     println!("Node count: {}", data.nodes.len());
     println!("    Nodes with tags: {nodes_with_tags}");
     println!("    Nodes without tags: {nodes_without_tags}");
 
-    let ways_with_tags = data.ways.iter().filter(|(_, way)| way.tags.is_some()).count();
-    let ways_without_tags = data.ways.iter().filter(|(_, way)| way.tags.is_none()).count();
+    let ways_with_tags = data.ways.iter().filter(|(_, way)| way.borrow().tags.is_some()).count();
+    let ways_without_tags = data.ways.iter().filter(|(_, way)| way.borrow().tags.is_none()).count();
 
     println!("Way count: {}", data.ways.len());
     println!("    Ways with tags: {ways_with_tags}");
     println!("    Ways without tags: {ways_without_tags}");
 
-    let rel_with_tags = data.relations.iter().filter(|(_, rel)| rel.tags.is_some()).count();
-    let rel_without_tags = data.relations.iter().filter(|(_, rel)| rel.tags.is_none()).count();
+    let rel_with_tags = data.relations.iter().filter(|(_, rel)| rel.borrow().tags.is_some()).count();
+    let rel_without_tags = data.relations.iter().filter(|(_, rel)| rel.borrow().tags.is_none()).count();
 
     println!("Relation count: {}", data.relations.len());
     println!("    Relations with tags: {rel_with_tags}");
@@ -39,40 +39,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (_, node) in data.nodes {
 
-        let Some(tags) = node.tags else { continue };
+        let Some(ref tags) = node.borrow().tags else { continue };
 
         if tags.features.is_empty() {
             num_nodes_without_feat += 1;
         }
 
-        for feat in tags.features {
-            features.insert(feat);
+        for feat in &tags.features {
+            features.insert(*feat);
         }
     }
 
     for (_, way) in data.ways {
 
-        let Some(tags) = way.tags else { continue };
+        let Some(ref tags) = way.borrow().tags else { continue };
 
         if tags.features.is_empty() {
             num_ways_without_feat += 1;
         }
 
-        for feat in tags.features {
-            features.insert(feat);
+        for feat in &tags.features {
+            features.insert(*feat);
         }
     }
 
     for (_, relation) in data.relations {
 
-        let Some(tags) = relation.tags else { continue };
+        let Some(ref tags) = relation.borrow().tags else { continue };
 
         if tags.features.is_empty() {
             num_relations_without_feat += 1;
         }
 
-        for feat in tags.features {
-            features.insert(feat);
+        for feat in &tags.features {
+            features.insert(*feat);
         }
     }
 

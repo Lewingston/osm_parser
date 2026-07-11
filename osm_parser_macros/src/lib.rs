@@ -53,7 +53,8 @@ pub fn feature_sub_type(_attr: TokenStream, item: TokenStream) -> TokenStream {
             PartialEq,
             Eq,
             Hash,
-            Clone
+            Clone,
+            Copy
         )]
         #[strum(serialize_all = "snake_case")]
         #vis enum #ident #generics {

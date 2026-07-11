@@ -1,7 +1,11 @@
 
 use osm_parser::map::Node;
+use osm_parser::map::Way;
+use osm_parser::map::Relation;
 
 use serde_json::Value;
+
+use std::rc::Rc;
 
 use crate::parser::tags;
 
@@ -30,6 +34,8 @@ pub fn parse(node: &JsonObj) -> Option<Node> {
         id,
         latitude,
         longitude,
-        tags
+        tags,
+        ways: Vec::<Rc<Way>>::new(),
+        relations: Vec::<Rc<Relation>>::new()
     })
 }

@@ -247,6 +247,7 @@ pub enum Amenity {
 }
 
 #[feature_sub_type]
+#[allow(clippy::enum_variant_names)]
 pub enum Barrier {
     // Linear barriers (e.g., along a path or road)
     CableBarrier,
@@ -1329,6 +1330,7 @@ pub enum PublicTransport {
 }
 
 #[feature_sub_type]
+#[allow(clippy::enum_variant_names)]
 pub enum Railway {
     Abandoned,
     BufferStop,
@@ -1693,7 +1695,7 @@ pub enum Waterway {
     Fuel,
 }
 
-#[derive(Display, EnumIter, EnumString, PartialEq, Eq, Hash)]
+#[derive(Display, EnumIter, EnumString, PartialEq, Eq, Hash, Clone, Copy)]
 #[strum(serialize_all = "snake_case")]
 #[enum_dispatch(FeatureSubType)]
 pub enum Feature {
