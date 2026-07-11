@@ -1,10 +1,12 @@
 
 use osm_parser::map::Way;
 use osm_parser::map::Node;
+use osm_parser::map::Relation;
 
 use serde_json::Value;
 
 use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::parser::tags;
@@ -12,7 +14,7 @@ use crate::parser::tags;
 type JsonObj = serde_json::Map<String, Value>;
 type JsonArray = Vec<Value>;
 
-type Nodes = HashMap::<u64, Option<Rc<Node>>>;
+type Nodes = HashMap::<u64, Option<Rc<RefCell<Node>>>>;
 
 pub fn parse(way: &JsonObj) -> Option<Way> {
 
@@ -30,7 +32,8 @@ pub fn parse(way: &JsonObj) -> Option<Way> {
     Some(Way {
         id,
         tags,
-        nodes
+        nodes,
+        relations: Vec::<Rc<RefCell<Relation>>>::new()
     })
 }
 
