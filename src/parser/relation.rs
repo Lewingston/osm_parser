@@ -1,10 +1,12 @@
 
-use osm_parser::map::Relation;
-use osm_parser::map::RelationMembers;
-use osm_parser::map::RelationNode;
-use osm_parser::map::RelationWay;
-use osm_parser::map::RelationRelation;
-use osm_parser::map::RelationMemberRole;
+use crate::map::{
+    Relation,
+    RelationMembers,
+    RelationNode,
+    RelationWay,
+    RelationRelation,
+    RelationMemberRole
+};
 
 use std::collections::HashMap;
 use std::str::FromStr;

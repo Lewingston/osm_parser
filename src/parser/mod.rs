@@ -4,7 +4,7 @@ mod way;
 mod relation;
 mod tags;
 
-use osm_parser::map::{
+use crate::map::{
     MapData,
     Node,
     Way,
@@ -22,10 +22,32 @@ enum OsmPrimitive {
     Relation(Relation)
 }
 
+
+/// # Errors
+///
+/// Will return an error if parsing JSON failed.
+pub fn from_string(str: &str) -> Result<MapData, Box<dyn std::error::Error>> {
+
+    let cursor = std::io::Cursor::new(str.as_bytes());
+    let reader = std::io::BufReader::new(cursor);
+
+    parse(reader)
+}
+
+
+/// # Errors
+///
+/// Will return an error if parsing JSON file failed.
 pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>> {
 
     let file   = std::fs::File::open(file_name)?;
     let reader = std::io::BufReader::new(file);
+
+    parse(reader)
+}
+
+
+fn parse<R: std::io::Read>(reader: R) -> Result<MapData, Box<dyn std::error::Error>> {
 
     let stream = Deserializer::from_reader(reader).into_iter::<Value>();
 

@@ -1,7 +1,9 @@
 
-use osm_parser::map::Way;
-use osm_parser::map::Node;
-use osm_parser::map::Relation;
+use crate::map::{
+    Way,
+    Node,
+    Relation
+};
 
 use serde_json::Value;
 

@@ -21,6 +21,12 @@ vim.keymap.set('n', '<F5>', function()
 end)
 
 
+vim.keymap.set('n', '<F6>', function()
+
+    runInConsole('cargo test')
+end)
+
+
 vim.keymap.set('n', '<C-c>', function()
 
     runInConsole('cargo clippy -- ' ..

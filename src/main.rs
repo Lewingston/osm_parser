@@ -1,10 +1,8 @@
 
-mod parser;
+pub mod parser;
+pub mod map;
 
 use std::collections::HashSet;
-
-use osm_parser::map::Feature;
-//use osm_parser::map::FeatureSubType;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
@@ -31,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("    Relations with tags: {rel_with_tags}");
     println!("    Relations without tags: {rel_without_tags}");
 
-    let mut features = HashSet::<Feature>::new();
+    let mut features = HashSet::<map::Feature>::new();
 
     let mut num_nodes_without_feat     = 0;
     let mut num_ways_without_feat      = 0;

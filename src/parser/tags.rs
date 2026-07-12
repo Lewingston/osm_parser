@@ -1,7 +1,9 @@
 
-use osm_parser::map::Tags;
-use osm_parser::map::Feature;
-use osm_parser::map::FeatureSubType;
+use crate::map::{
+    Tags,
+    Feature,
+    FeatureSubType
+};
 
 use serde_json::Value;
 
