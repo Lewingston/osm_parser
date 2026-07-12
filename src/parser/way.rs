@@ -1,22 +1,19 @@
 
 use crate::map::{
     Way,
-    Node,
-    Relation
+    Relation,
+    WayNode
 };
 
 use serde_json::Value;
 
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 use crate::parser::tags;
 
 type JsonObj = serde_json::Map<String, Value>;
 type JsonArray = Vec<Value>;
-
-type Nodes = HashMap::<u64, Option<Rc<RefCell<Node>>>>;
 
 pub fn parse(way: &JsonObj) -> Option<Way> {
 
@@ -29,7 +26,7 @@ pub fn parse(way: &JsonObj) -> Option<Way> {
 
     let nodes = way.get("nodes")
         .and_then(Value::as_array)
-        .map_or(Nodes::new(), parse_nodes);
+        .map_or(Vec::<WayNode>::new(), parse_nodes);
 
     Some(Way {
         id,
@@ -40,9 +37,9 @@ pub fn parse(way: &JsonObj) -> Option<Way> {
 }
 
 
-fn parse_nodes(nodes: &JsonArray) -> Nodes {
+fn parse_nodes(nodes: &JsonArray) -> Vec<WayNode> {
     nodes.iter()
-        .filter_map(|id| id.as_u64().map(|id| (id, None)))
+        .filter_map(|id| id.as_u64().map(|id| WayNode{id, node: None}))
         .collect()
 }
 

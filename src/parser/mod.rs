@@ -124,15 +124,11 @@ fn construct_ways(map: &mut MapData) {
 
 fn construct_way(way: &Rc<RefCell<Way>>, nodes: &mut HashMap<u64, Rc<RefCell<Node>>>) {
 
-    // Find the nodes in this relation
-    let nodes: Vec<&Rc<RefCell<Node>>> =
-        way.borrow().nodes.keys().filter_map(|id| nodes.get(id)).collect();
+    for way_node in &mut way.borrow_mut().nodes {
 
-    // Insert all the nodes
-    for node in nodes {
-
-        way.borrow_mut().nodes.insert(node.borrow().id, Some(node.clone()));
+        let Some(node) = nodes.get(&way_node.id) else { continue; };
         node.borrow_mut().ways.push(way.clone());
+        way_node.node = Some(node.clone());
     }
 }
 
@@ -155,29 +151,20 @@ fn construct_relation(
     nodes:    &mut HashMap<u64, Rc<RefCell<Node>>>,
     ways:     &mut HashMap<u64, Rc<RefCell<Way>>>)
 {
-    // Find the nodes in this relation
-    let nodes: Vec<&Rc<RefCell<Node>>> =
-        relation.borrow().members.nodes.keys().filter_map(|id| nodes.get(id)).collect();
 
-    // Find the ways in this relation
-    let ways: Vec<&Rc<RefCell<Way>>> =
-        relation.borrow().members.ways.keys().filter_map(|id| ways.get(id)).collect();
+    for relation_node in &mut relation.borrow_mut().members.nodes {
 
-    // Insert all nodes
-    for node in nodes {
-
-        let mut rel = relation.borrow_mut();
-        let Some(relation_member) = rel.members.nodes.get_mut(&node.borrow().id) else { continue; };
-        relation_member.node = Some(node.clone());
+        let Some(node) = nodes.get(&relation_node.id) else { continue; };
         node.borrow_mut().relations.push(relation.clone());
+        relation_node.node = Some(node.clone());
     }
 
-    // Insert all ways
-    for way in ways {
+    for relation_way in &mut relation.borrow_mut().members.ways {
 
-        let mut rel = relation.borrow_mut();
-        let Some(relation_member) = rel.members.ways.get_mut(&way.borrow().id) else { continue; };
-        relation_member.way = Some(way.clone());
+        let Some(way) = ways.get(&relation_way.id) else { continue; };
         way.borrow_mut().relations.push(relation.clone());
+        relation_way.way = Some(way.clone());
     }
+
+    // TODO: Relations
 }

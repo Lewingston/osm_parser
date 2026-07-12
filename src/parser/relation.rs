@@ -8,7 +8,6 @@ use crate::map::{
     RelationMemberRole
 };
 
-use std::collections::HashMap;
 use std::str::FromStr;
 
 use serde_json::Value;
@@ -21,9 +20,9 @@ type JsonArray = Vec<Value>;
 
 enum RelationMember {
     Undefined,
-    Node(RelationNode, u64),
-    Way(RelationWay, u64),
-    Relation(RelationRelation, u64)
+    Node(RelationNode),
+    Way(RelationWay),
+    Relation(RelationRelation)
 }
 
 
@@ -54,9 +53,9 @@ pub fn parse(relation: &JsonObj) -> Option<Relation> {
 fn parse_members(members: &JsonArray) -> RelationMembers {
 
     let mut result = RelationMembers {
-        nodes:     HashMap::<u64, RelationNode>::new(),
-        ways:      HashMap::<u64, RelationWay>::new(),
-        relations: HashMap::<u64, RelationRelation>::new()
+        nodes:     Vec::<RelationNode>::new(),
+        ways:      Vec::<RelationWay>::new(),
+        relations: Vec::<RelationRelation>::new()
     };
 
     for member in members {
@@ -68,14 +67,14 @@ fn parse_members(members: &JsonArray) -> RelationMembers {
 
         match parse_member(member_obj) {
 
-            RelationMember::Node(node, id) => {
-                result.nodes.insert(id, node);
+            RelationMember::Node(node) => {
+                result.nodes.push(node);
             },
-            RelationMember::Way(way, id) => {
-                result.ways.insert(id, way);
+            RelationMember::Way(way) => {
+                result.ways.push(way);
             },
-            RelationMember::Relation(relation, id) => {
-                result.relations.insert(id, relation);
+            RelationMember::Relation(relation) => {
+                result.relations.push(relation);
             },
             RelationMember::Undefined => {
                 println!("Unable to parse relation member!");
@@ -108,13 +107,13 @@ fn parse_member(data: &JsonObj) -> RelationMember {
 
     match member_type {
         "node" => {
-            RelationMember::Node(RelationNode{node: None, role}, id)
+            RelationMember::Node(RelationNode{node: None, id, role})
         },
         "way" => {
-            RelationMember::Way(RelationWay{way: None, role}, id)
+            RelationMember::Way(RelationWay{way: None, id, role})
         },
         "relation" => {
-            RelationMember::Relation(RelationRelation{relation: None, role}, id)
+            RelationMember::Relation(RelationRelation{relation: None, id, role})
         }
         _ => { RelationMember::Undefined }
     }

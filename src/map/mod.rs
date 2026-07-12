@@ -35,8 +35,14 @@ pub struct Way {
     pub id: u64,
     pub tags: Option<Tags>,
 
-    pub nodes:     HashMap<u64, Option<Rc<RefCell<Node>>>>,
+    pub nodes:     Vec<WayNode>,
     pub relations: Vec<Rc<RefCell<Relation>>>
+}
+
+
+pub struct WayNode {
+    pub id:   u64,
+    pub node: Option<Rc<RefCell<Node>>>
 }
 
 
@@ -57,9 +63,9 @@ pub struct Tags {
 
 pub struct RelationMembers {
 
-    pub nodes:     HashMap<u64, RelationNode>,
-    pub ways:      HashMap<u64, RelationWay>,
-    pub relations: HashMap<u64, RelationRelation>
+    pub nodes:     Vec<RelationNode>,
+    pub ways:      Vec<RelationWay>,
+    pub relations: Vec<RelationRelation>
 }
 
 
@@ -111,17 +117,20 @@ pub enum RelationMemberRole {
 
 pub struct RelationNode {
     pub node: Option<Rc<RefCell<Node>>>,
+    pub id:   u64,
     pub role: RelationMemberRole
 }
 
 
 pub struct RelationWay {
     pub way:  Option<Rc<RefCell<Way>>>,
+    pub id:   u64,
     pub role: RelationMemberRole
 }
 
 
 pub struct RelationRelation {
     pub relation: Option<Rc<RefCell<Relation>>>,
+    pub id:       u64,
     pub role:     RelationMemberRole
 }
