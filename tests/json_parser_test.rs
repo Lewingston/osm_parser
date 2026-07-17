@@ -1,5 +1,6 @@
 
 use osm_parser::parser;
+use std::rc::Rc;
 
 #[test]
 fn test_node_parsing() {
@@ -88,18 +89,33 @@ fn test_way_parsing() {
             assert_eq!(map_data.nodes.len(), 3);
             assert_eq!(map_data.ways.len(), 2);
 
+            let Some(node_a) = map_data.nodes.get(&1) else { assert!(false); return; };
+            assert_eq!(node_a.borrow().ways.len(), 2);
+
+            let Some(node_b) = map_data.nodes.get(&2) else { assert!(false); return; };
+            assert_eq!(node_b.borrow().ways.len(), 2);
+
+            let Some(node_c) = map_data.nodes.get(&3) else { assert!(false); return; };
+            assert_eq!(node_c.borrow().ways.len(), 1);
+
             let Some(way_a) = map_data.ways.get(&4) else { assert!(false); return; };
             let way_a = way_a.borrow();
             let Some(way_b) = map_data.ways.get(&5) else { assert!(false); return; };
             let way_b = way_b.borrow();
 
             assert_eq!(way_a.nodes.len(), 3);
+            let Some(way_node_a) = &way_a.nodes[0].node else { assert!(false); return; };
+            assert!(Rc::ptr_eq(way_node_a, node_c));
+            let Some(way_node_b) = &way_a.nodes[1].node else { assert!(false); return; };
+            assert!(Rc::ptr_eq(way_node_b, node_b));
+            let Some(way_node_c) = &way_a.nodes[2].node else { assert!(false); return; };
+            assert!(Rc::ptr_eq(way_node_c, node_a));
+
             assert_eq!(way_b.nodes.len(), 2);
-
-            let Some(node) = map_data.nodes.get(&1) else { assert!(false); return; };
-            let node = node.borrow();
-
-            assert_eq!(node.ways.len(), 2);
+            let Some(way_node_a) = &way_b.nodes[0].node else { assert!(false); return; };
+            assert!(Rc::ptr_eq(way_node_a, node_a));
+            let Some(way_node_b) = &way_b.nodes[1].node else { assert!(false); return; };
+            assert!(Rc::ptr_eq(way_node_b, node_b));
         },
         Err(_) => {
             assert!(false);
