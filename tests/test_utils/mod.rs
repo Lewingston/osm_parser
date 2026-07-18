@@ -33,6 +33,27 @@ impl MapDataTestExtension for MapData {
 }
 
 
+pub trait NodeTestExtension {
+
+    fn get_parent_way(&self, index: usize) -> Ref<'_, Way>;
+    fn get_parent_relation(&self, index: usize) -> Ref<'_, Relation>;
+}
+
+
+impl NodeTestExtension for Node {
+
+    fn get_parent_way(&self, index: usize) -> Ref<'_, Way> {
+
+        self.ways[index].borrow()
+    }
+
+    fn get_parent_relation(&self, index: usize) -> Ref<'_, Relation> {
+
+        self.relations[index].borrow()
+    }
+}
+
+
 pub trait WayTestExtension {
 
     fn get_node(&self, index: usize) -> Ref<'_, Node>;

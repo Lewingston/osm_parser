@@ -4,6 +4,7 @@ use osm_parser::parser;
 mod test_utils;
 
 use test_utils::MapDataTestExtension;
+use test_utils::NodeTestExtension;
 use test_utils::WayTestExtension;
 use test_utils::RelationExtension;
 
@@ -98,12 +99,19 @@ fn test_way_parsing() {
             let node_b = map_data.get_node(2);
             let node_c = map_data.get_node(3);
 
-            assert_eq!(node_a.ways.len(), 2);
-            assert_eq!(node_b.ways.len(), 2);
-            assert_eq!(node_c.ways.len(), 1);
-
             let way_a = map_data.get_way(4);
             let way_b = map_data.get_way(5);
+
+            assert_eq!(node_a.ways.len(), 2);
+            assert!(std::ptr::eq(&*node_a.get_parent_way(0), &*way_a));
+            assert!(std::ptr::eq(&*node_a.get_parent_way(1), &*way_b));
+
+            assert_eq!(node_b.ways.len(), 2);
+            assert!(std::ptr::eq(&*node_b.get_parent_way(0), &*way_a));
+            assert!(std::ptr::eq(&*node_b.get_parent_way(1), &*way_b));
+
+            assert_eq!(node_c.ways.len(), 1);
+            assert!(std::ptr::eq(&*node_c.get_parent_way(0), &*way_a));
 
             assert_eq!(way_a.id, 4);
             assert_eq!(way_b.id, 5);
@@ -204,6 +212,8 @@ fn test_relation_parsing() {
 
             let relation = map_data.get_relation(6);
 
+            assert_eq!(relation.id, 6);
+
             assert_eq!(node_a.relations.len(), 0);
             assert_eq!(node_a.ways.len(), 1);
 
@@ -212,9 +222,11 @@ fn test_relation_parsing() {
 
             assert_eq!(node_c.relations.len(), 1);
             assert_eq!(node_c.ways.len(), 1);
+            assert!(std::ptr::eq(&*node_c.get_parent_relation(0), &*relation));
 
             assert_eq!(node_d.relations.len(), 1);
             assert_eq!(node_d.ways.len(), 0);
+            assert!(std::ptr::eq(&*node_d.get_parent_relation(0), &*relation));
 
             let way_parent_relation = way.relations[0].borrow();
             assert!(std::ptr::eq(&*way_parent_relation, &*relation));
