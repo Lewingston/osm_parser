@@ -153,6 +153,33 @@ impl Relation
 
         self.members.relations[index].relation.as_ref().map(|relation| relation.borrow())
     }
+
+    #[must_use]
+    pub fn is_complete(&self) -> bool {
+
+        let has_all_nodes = !self.members.nodes.iter()
+            .any(|relation_node| relation_node.node.is_none());
+
+        if !has_all_nodes {
+            return false;
+        }
+
+        let has_all_ways = !self.members.ways.iter()
+            .any(|relation_way| relation_way.way.is_none());
+
+        if !has_all_ways {
+            return false;
+        }
+
+        let has_all_relations = !self.members.relations.iter()
+            .any(|rel_relation| rel_relation.relation.is_none());
+
+        if !has_all_relations {
+            return false;
+        }
+
+        true
+    }
 }
 
 

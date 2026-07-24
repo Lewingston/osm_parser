@@ -32,8 +32,8 @@ fn test_node_parsing() {
             assert_eq!(node.parent_relations.len(), 0);
 
         },
-        Err(_) => {
-            assert!(false);
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
         }
     }
 }
@@ -123,8 +123,8 @@ fn test_way_parsing() {
             assert!(way_a.is_complete());
             assert!(way_b.is_complete());
         },
-        Err(_) => {
-            assert!(false);
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
         }
     }
 }
@@ -173,8 +173,8 @@ fn test_incomplete_way_parsing() {
 
             assert!(!way.is_complete());
         },
-        Err(_) => {
-            assert!(false);
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
         }
     }
 }
@@ -290,9 +290,11 @@ fn test_relation_parsing() {
             assert!(std::ptr::eq(&*relation.get_child_node(1).unwrap(), &*node_c));
             assert!(std::ptr::eq(&*relation.get_child_way(0).unwrap(), &*way));
 
+            assert!(relation.is_complete());
+
         },
-        Err(_) => {
-            assert!(false);
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
         }
     }
 }
@@ -351,8 +353,233 @@ fn test_relation_of_relations_parsing() {
             let child_relation = relation_b.get_child_relation(0).unwrap();
             assert!(std::ptr::eq(&*child_relation, &*relation_a));
         },
-        Err(_) => {
-            assert!(false);
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
+        }
+    }
+}
+
+
+#[test]
+fn incomplete_relation_parsing() {
+
+    let json_data_missing_node = r#"
+    {
+        "elements": [
+            {
+                "type": "node",
+                "id": 1,
+                "lat": 0.0,
+                "lon": 0.0
+            },
+            {
+                "type": "way",
+                "id": 2,
+                "nodes": [
+                    1
+                ]
+            },
+            {
+                "type": "relation",
+                "id": 3,
+                "members": [
+                    {
+                        "type": "node",
+                        "ref": 1,
+                        "role": ""
+                    }
+                ]
+            },
+            {
+                "type": "relation",
+                "id": 4,
+                "members": [
+                    {
+                        "type": "node",
+                        "ref": 100,
+                        "role": ""
+                    },
+                    {
+                        "type": "way",
+                        "ref": 2,
+                        "role": ""
+                    },
+                    {
+                        "type": "relation",
+                        "ref": 3,
+                        "role": ""
+                    }
+                ]
+            }
+        ]
+    }
+    "#;
+
+    match parser::from_string(json_data_missing_node) {
+        Ok(map_data) => {
+
+            let relation       = map_data.get_relation(Id(4)).unwrap();
+            let other_relation = map_data.get_relation(Id(3)).unwrap();
+            let way            = map_data.get_way(Id(2)).unwrap();
+
+            assert_eq!(other_relation.parent_relations.len(), 1);
+            assert_eq!(way.parent_relations.len(), 1);
+
+            assert_eq!(relation.members.nodes.len(), 1);
+            assert_eq!(relation.members.nodes[0].id, Id(100));
+            assert!(relation.members.nodes[0].node.is_none());
+
+            assert_eq!(relation.members.ways.len(), 1);
+            assert!(std::ptr::eq(&*relation.get_child_way(0).unwrap(), &*way));
+
+            assert_eq!(relation.members.relations.len(), 1);
+            assert!(std::ptr::eq(&*relation.get_child_relation(0).unwrap(), &*other_relation));
+
+            assert!(!relation.is_complete());
+
+        },
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
+        }
+    }
+
+    let json_data_missing_way = r#"
+    {
+        "elements": [
+            {
+                "type": "node",
+                "id": 1,
+                "lat": 0.0,
+                "lon": 0.0
+            },
+            {
+                "type": "relation",
+                "id": 2,
+                "members": [
+                    {
+                        "type": "node",
+                        "ref": 1,
+                        "role": ""
+                    }
+                ]
+            },
+            {
+                "type": "relation",
+                "id": 3,
+                "members": [
+                    {
+                        "type": "node",
+                        "ref": 1,
+                        "role": ""
+                    },
+                    {
+                        "type": "way",
+                        "ref": 333,
+                        "role": ""
+                    },
+                    {
+                        "type": "relation",
+                        "ref": 2,
+                        "role": ""
+                    }
+                ]
+            }
+        ]
+    }
+    "#;
+
+    match parser::from_string(json_data_missing_way) {
+        Ok(map_data) => {
+
+            let relation       = map_data.get_relation(Id(3)).unwrap();
+            let other_relation = map_data.get_relation(Id(2)).unwrap();
+            let node           = map_data.get_node(Id(1)).unwrap();
+
+            assert_eq!(node.parent_relations.len(), 2);
+            assert_eq!(other_relation.parent_relations.len(), 1);
+
+            assert_eq!(relation.members.ways.len(), 1);
+            assert_eq!(relation.members.ways[0].id, Id(333));
+            assert!(relation.members.ways[0].way.is_none());
+
+            assert_eq!(relation.members.nodes.len(), 1);
+            assert!(std::ptr::eq(&*relation.get_child_node(0).unwrap(), &*node));
+
+            assert_eq!(relation.members.relations.len(), 1);
+            assert!(std::ptr::eq(&*relation.get_child_relation(0).unwrap(), &*other_relation));
+
+            assert!(!relation.is_complete());
+        },
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
+        }
+    }
+
+    let json_data_missing_relation = r#"
+    {
+        "elements": [
+            {
+                "type": "node",
+                "id": 1,
+                "lat": 0.0,
+                "lon": 0.0
+            },
+            {
+                "type": "way",
+                "id": 2,
+                "nodes": [
+                    1
+                ]
+            },
+            {
+                "type": "relation",
+                "id": 3,
+                "members": [
+                    {
+                        "type": "node",
+                        "ref": 1,
+                        "role": ""
+                    },
+                    {
+                        "type": "way",
+                        "ref": 2,
+                        "role": ""
+                    },
+                    {
+                        "type": "relation",
+                        "ref": 777,
+                        "role": ""
+                    }
+                ]
+            }
+        ]
+    }
+    "#;
+
+    match parser::from_string(json_data_missing_relation) {
+        Ok(map_data) => {
+
+            let relation = map_data.get_relation(Id(3)).unwrap();
+            let node     = map_data.get_node(Id(1)).unwrap();
+            let way      = map_data.get_way(Id(2)).unwrap();
+
+            assert_eq!(node.parent_relations.len(), 1);
+            assert_eq!(way.parent_relations.len(), 1);
+
+            assert_eq!(relation.members.relations.len(), 1);
+            assert_eq!(relation.members.relations[0].id, Id(777));
+            assert!(relation.members.relations[0].relation.is_none());
+
+            assert_eq!(relation.members.nodes.len(), 1);
+            assert!(std::ptr::eq(&*relation.get_child_node(0).unwrap(), &*node));
+
+            assert_eq!(relation.members.ways.len(), 1);
+            assert!(std::ptr::eq(&*relation.get_child_way(0).unwrap(), &*way));
+
+            assert!(!relation.is_complete());
+        },
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
         }
     }
 }
@@ -360,12 +587,6 @@ fn test_relation_of_relations_parsing() {
 
 #[test]
 fn test_circular_relation_parsing() {
-
-}
-
-
-#[test]
-fn incomplete_relation_parsing() {
 
 }
 
