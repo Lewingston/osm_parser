@@ -101,6 +101,12 @@ impl Way {
 
         self.child_nodes[index].node.as_ref().map(|way| way.borrow())
     }
+
+    #[must_use]
+    pub fn is_complete(&self) -> bool {
+
+        !self.child_nodes.iter().any(|way_node| way_node.node.is_none())
+    }
 }
 
 

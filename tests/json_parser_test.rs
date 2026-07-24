@@ -119,6 +119,9 @@ fn test_way_parsing() {
             assert_eq!(way_b.child_nodes.len(), 2);
             assert!(std::ptr::eq(&*way_b.get_child_node(0).unwrap(), &*node_a));
             assert!(std::ptr::eq(&*way_b.get_child_node(1).unwrap(), &*node_b));
+
+            assert!(way_a.is_complete());
+            assert!(way_b.is_complete());
         },
         Err(_) => {
             assert!(false);
@@ -167,6 +170,8 @@ fn test_incomplete_way_parsing() {
 
             assert_eq!(way.child_nodes[1].id, Id(1));
             assert!(std::ptr::eq(&*way.get_child_node(1).unwrap(), &*node));
+
+            assert!(!way.is_complete());
         },
         Err(_) => {
             assert!(false);
