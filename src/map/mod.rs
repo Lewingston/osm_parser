@@ -41,6 +41,7 @@ pub struct Way {
 
 
 pub struct WayNode {
+
     pub id:   u64,
     pub node: Option<Rc<RefCell<Node>>>
 }
@@ -51,7 +52,9 @@ pub struct Relation {
     pub id:   u64,
     pub tags: Option<Tags>,
 
-    pub members: RelationMembers
+    pub members: RelationMembers,
+
+    pub relations: Vec<Rc<RefCell<Relation>>>
 }
 
 

@@ -103,12 +103,12 @@ fn test_way_parsing() {
             let way_b = map_data.get_way(5);
 
             assert_eq!(node_a.ways.len(), 2);
-            assert!(std::ptr::eq(&*node_a.get_parent_way(0), &*way_a));
-            assert!(std::ptr::eq(&*node_a.get_parent_way(1), &*way_b));
+            assert!(std::ptr::eq(&*node_a.get_parent_way_by_id(4), &*way_a));
+            assert!(std::ptr::eq(&*node_a.get_parent_way_by_id(5), &*way_b));
 
             assert_eq!(node_b.ways.len(), 2);
-            assert!(std::ptr::eq(&*node_b.get_parent_way(0), &*way_a));
-            assert!(std::ptr::eq(&*node_b.get_parent_way(1), &*way_b));
+            assert!(std::ptr::eq(&*node_b.get_parent_way_by_id(4), &*way_a));
+            assert!(std::ptr::eq(&*node_b.get_parent_way_by_id(5), &*way_b));
 
             assert_eq!(node_c.ways.len(), 1);
             assert!(std::ptr::eq(&*node_c.get_parent_way(0), &*way_a));
@@ -253,6 +253,60 @@ fn test_relation_parsing() {
 #[test]
 fn test_relation_of_relations_parsing() {
 
+    let json_data = r#"
+    {
+        "elements": [
+            {
+                "type": "relation",
+                "id": 1,
+                "members": [
+                ]
+            },
+            {
+                "type": "relation",
+                "id": 2,
+                "members": [
+                    {
+                        "type": "relation",
+                        "ref": 1,
+                        "role": ""
+                    }
+                ]
+            }
+        ]
+    }
+    "#;
+
+    match parser::from_string(json_data) {
+        Ok(map_data) => {
+
+            assert_eq!(map_data.nodes.len(), 0);
+            assert_eq!(map_data.ways.len(), 0);
+            assert_eq!(map_data.relations.len(), 2);
+
+            let relation_a = map_data.get_relation(1);
+            let relation_b = map_data.get_relation(2);
+
+            assert_eq!(relation_a.members.nodes.len(), 0);
+            assert_eq!(relation_a.members.ways.len(), 0);
+            assert_eq!(relation_a.members.relations.len(), 0);
+            assert_eq!(relation_a.relations.len(), 1);
+
+            assert_eq!(relation_b.members.nodes.len(), 0);
+            assert_eq!(relation_b.members.ways.len(), 0);
+            assert_eq!(relation_b.members.relations.len(), 1);
+            assert_eq!(relation_b.relations.len(), 0);
+
+            let parent_relation = relation_a.get_parent_relation(0);
+            assert!(std::ptr::eq(&*parent_relation, &*relation_b));
+
+            let child_relation = relation_b.get_relation(0);
+            assert!(std::ptr::eq(&*child_relation, &*relation_a));
+        },
+        Err(_) => {
+            assert!(false);
+        }
+    }
 }
 
 

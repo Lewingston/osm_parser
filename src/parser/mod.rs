@@ -135,6 +135,8 @@ fn construct_way(way: &Rc<RefCell<Way>>, nodes: &mut HashMap<u64, Rc<RefCell<Nod
 
 fn construct_relations(map: &mut MapData) {
 
+    let mut list_of_nested_relations: Vec<Rc<RefCell<Relation>>> = vec![];
+
     for relation in &mut map.relations.values_mut() {
 
         construct_relation(
@@ -142,14 +144,23 @@ fn construct_relations(map: &mut MapData) {
             &mut map.nodes,
             &mut map.ways,
         );
+
+        if relation.borrow().members.relations.len() > 0 {
+            list_of_nested_relations.push(relation.clone());
+        }
+    }
+
+    for relation in &mut list_of_nested_relations {
+
+        construct_nested_relation(relation, &mut map.relations);
     }
 }
 
 
 fn construct_relation(
-    relation: &Rc<RefCell<Relation>>,
-    nodes:    &mut HashMap<u64, Rc<RefCell<Node>>>,
-    ways:     &mut HashMap<u64, Rc<RefCell<Way>>>)
+    relation:  &Rc<RefCell<Relation>>,
+    nodes:     &mut HashMap<u64, Rc<RefCell<Node>>>,
+    ways:      &mut HashMap<u64, Rc<RefCell<Way>>>)
 {
 
     for relation_node in &mut relation.borrow_mut().members.nodes {
@@ -167,4 +178,17 @@ fn construct_relation(
     }
 
     // TODO: Relations
+}
+
+
+fn construct_nested_relation(
+    relation:  &Rc<RefCell<Relation>>,
+    relations: &mut HashMap<u64, Rc<RefCell<Relation>>>)
+{
+    for relation_relation in &mut relation.borrow_mut().members.relations {
+
+        let Some(child_relation) = relations.get(&relation_relation.id) else { continue; };
+        child_relation.borrow_mut().relations.push(relation.clone());
+        relation_relation.relation = Some(child_relation.clone());
+    }
 }

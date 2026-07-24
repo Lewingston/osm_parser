@@ -9,6 +9,8 @@ use crate::map::{
 };
 
 use std::str::FromStr;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use serde_json::Value;
 
@@ -45,7 +47,8 @@ pub fn parse(relation: &JsonObj) -> Option<Relation> {
     Some(Relation {
         id,
         tags,
-        members
+        members,
+        relations: Vec::<Rc<RefCell<Relation>>>::new()
     })
 }
 
