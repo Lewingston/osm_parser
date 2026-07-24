@@ -1,14 +1,12 @@
 
 use crate::map::{
+    Id,
     Way,
-    Relation,
+    RelationMap,
     WayNode
 };
 
 use serde_json::Value;
-
-use std::rc::Rc;
-use std::cell::RefCell;
 
 use crate::parser::tags;
 
@@ -29,17 +27,17 @@ pub fn parse(way: &JsonObj) -> Option<Way> {
         .map_or(Vec::<WayNode>::new(), parse_nodes);
 
     Some(Way {
-        id,
+        id: Id(id),
         tags,
-        nodes,
-        relations: Vec::<Rc<RefCell<Relation>>>::new()
+        child_nodes: nodes,
+        parent_relations: RelationMap::new()
     })
 }
 
 
 fn parse_nodes(nodes: &JsonArray) -> Vec<WayNode> {
     nodes.iter()
-        .filter_map(|id| id.as_u64().map(|id| WayNode{id, node: None}))
+        .filter_map(|id| id.as_u64().map(|id| WayNode{id: Id(id), node: None}))
         .collect()
 }
 

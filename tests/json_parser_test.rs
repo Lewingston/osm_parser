@@ -1,11 +1,6 @@
 
 use osm_parser::parser;
-
-mod test_utils;
-
-use test_utils::NodeTestExtension;
-use test_utils::WayTestExtension;
-use test_utils::RelationExtension;
+use osm_parser::map::Id;
 
 
 #[test]
@@ -27,14 +22,14 @@ fn test_node_parsing() {
     match parser::from_string(json_data) {
         Ok(map_data) => {
 
-            let id: u64 = 1;
+            let id = Id(1);
             let node = map_data.get_node(id).unwrap();
 
             assert_eq!(node.id, id);
             assert_eq!(node.latitude, 1.0);
             assert_eq!(node.longitude, 3.0);
-            assert_eq!(node.ways.len(), 0);
-            assert_eq!(node.relations.len(), 0);
+            assert_eq!(node.parent_ways.len(), 0);
+            assert_eq!(node.parent_relations.len(), 0);
 
         },
         Err(_) => {
@@ -95,35 +90,83 @@ fn test_way_parsing() {
             assert_eq!(map_data.nodes.len(), 3);
             assert_eq!(map_data.ways.len(), 2);
 
-            let node_a = map_data.get_node(1).unwrap();
-            let node_b = map_data.get_node(2).unwrap();
-            let node_c = map_data.get_node(3).unwrap();
+            let node_a = map_data.get_node(Id(1)).unwrap();
+            let node_b = map_data.get_node(Id(2)).unwrap();
+            let node_c = map_data.get_node(Id(3)).unwrap();
 
-            let way_a = map_data.get_way(4).unwrap();
-            let way_b = map_data.get_way(5).unwrap();
+            let way_a = map_data.get_way(Id(4)).unwrap();
+            let way_b = map_data.get_way(Id(5)).unwrap();
 
-            assert_eq!(node_a.ways.len(), 2);
-            assert!(std::ptr::eq(&*node_a.get_parent_way_by_id(4), &*way_a));
-            assert!(std::ptr::eq(&*node_a.get_parent_way_by_id(5), &*way_b));
+            assert_eq!(node_a.parent_ways.len(), 2);
+            assert!(std::ptr::eq(&*node_a.get_parent_way(Id(4)).unwrap(), &*way_a));
+            assert!(std::ptr::eq(&*node_a.get_parent_way(Id(5)).unwrap(), &*way_b));
 
-            assert_eq!(node_b.ways.len(), 2);
-            assert!(std::ptr::eq(&*node_b.get_parent_way_by_id(4), &*way_a));
-            assert!(std::ptr::eq(&*node_b.get_parent_way_by_id(5), &*way_b));
+            assert_eq!(node_b.parent_ways.len(), 2);
+            assert!(std::ptr::eq(&*node_b.get_parent_way(Id(4)).unwrap(), &*way_a));
+            assert!(std::ptr::eq(&*node_b.get_parent_way(Id(5)).unwrap(), &*way_b));
 
-            assert_eq!(node_c.ways.len(), 1);
-            assert!(std::ptr::eq(&*node_c.get_parent_way(0), &*way_a));
+            assert_eq!(node_c.parent_ways.len(), 1);
+            assert!(std::ptr::eq(&*node_c.get_parent_way(Id(4)).unwrap(), &*way_a));
 
-            assert_eq!(way_a.id, 4);
-            assert_eq!(way_b.id, 5);
+            assert_eq!(way_a.id, Id(4));
+            assert_eq!(way_b.id, Id(5));
 
-            assert_eq!(way_a.nodes.len(), 3);
-            assert!(std::ptr::eq(&*way_a.get_node(0), &*node_c));
-            assert!(std::ptr::eq(&*way_a.get_node(1), &*node_b));
-            assert!(std::ptr::eq(&*way_a.get_node(2), &*node_a));
+            assert_eq!(way_a.child_nodes.len(), 3);
+            assert!(std::ptr::eq(&*way_a.get_child_node(0).unwrap(), &*node_c));
+            assert!(std::ptr::eq(&*way_a.get_child_node(1).unwrap(), &*node_b));
+            assert!(std::ptr::eq(&*way_a.get_child_node(2).unwrap(), &*node_a));
 
-            assert_eq!(way_b.nodes.len(), 2);
-            assert!(std::ptr::eq(&*way_b.get_node(0), &*node_a));
-            assert!(std::ptr::eq(&*way_b.get_node(1), &*node_b));
+            assert_eq!(way_b.child_nodes.len(), 2);
+            assert!(std::ptr::eq(&*way_b.get_child_node(0).unwrap(), &*node_a));
+            assert!(std::ptr::eq(&*way_b.get_child_node(1).unwrap(), &*node_b));
+        },
+        Err(_) => {
+            assert!(false);
+        }
+    }
+}
+
+
+#[test]
+fn test_incomplete_way_parsing() {
+
+    let json_data = r#"
+    {
+        "elements": [
+            {
+                "type": "node",
+                "id": 1,
+                "lat": 0.0,
+                "lon": 0.0
+            },
+            {
+                "type": "way",
+                "id": 2,
+                "nodes": [
+                    10,
+                    1,
+                    11,
+                    12
+                ]
+            }
+        ]
+    }
+    "#;
+
+    match parser::from_string(json_data) {
+        Ok(map_data) => {
+
+            let node = map_data.get_node(Id(1)).unwrap();
+            let way  = map_data.get_way(Id(2)).unwrap();
+
+            assert_eq!(node.parent_ways.len(), 1);
+            assert_eq!(way.child_nodes.len(), 4);
+
+            assert_eq!(way.child_nodes[0].id, Id(10));
+            assert!(way.get_child_node(0).is_none());
+
+            assert_eq!(way.child_nodes[1].id, Id(1));
+            assert!(std::ptr::eq(&*way.get_child_node(1).unwrap(), &*node));
         },
         Err(_) => {
             assert!(false);
@@ -203,44 +246,44 @@ fn test_relation_parsing() {
             assert_eq!(map_data.ways.len(), 1);
             assert_eq!(map_data.relations.len(), 1);
 
-            let node_a = map_data.get_node(1).unwrap();
-            let node_b = map_data.get_node(2).unwrap();
-            let node_c = map_data.get_node(3).unwrap();
-            let node_d = map_data.get_node(4).unwrap();
+            let node_a = map_data.get_node(Id(1)).unwrap();
+            let node_b = map_data.get_node(Id(2)).unwrap();
+            let node_c = map_data.get_node(Id(3)).unwrap();
+            let node_d = map_data.get_node(Id(4)).unwrap();
 
-            let way = map_data.get_way(5).unwrap();
+            let way = map_data.get_way(Id(5)).unwrap();
 
-            let relation = map_data.get_relation(6).unwrap();
+            let relation = map_data.get_relation(Id(6)).unwrap();
 
-            assert_eq!(relation.id, 6);
+            assert_eq!(relation.id, Id(6));
 
-            assert_eq!(node_a.relations.len(), 0);
-            assert_eq!(node_a.ways.len(), 1);
+            assert_eq!(node_a.parent_relations.len(), 0);
+            assert_eq!(node_a.parent_ways.len(), 1);
 
-            assert_eq!(node_b.relations.len(), 0);
-            assert_eq!(node_b.ways.len(), 1);
+            assert_eq!(node_b.parent_relations.len(), 0);
+            assert_eq!(node_b.parent_ways.len(), 1);
 
-            assert_eq!(node_c.relations.len(), 1);
-            assert_eq!(node_c.ways.len(), 1);
-            assert!(std::ptr::eq(&*node_c.get_parent_relation(0), &*relation));
+            assert_eq!(node_c.parent_relations.len(), 1);
+            assert_eq!(node_c.parent_ways.len(), 1);
+            assert!(std::ptr::eq(&*node_c.get_parent_relation(Id(6)).unwrap(), &*relation));
 
-            assert_eq!(node_d.relations.len(), 1);
-            assert_eq!(node_d.ways.len(), 0);
-            assert!(std::ptr::eq(&*node_d.get_parent_relation(0), &*relation));
+            assert_eq!(node_d.parent_relations.len(), 1);
+            assert_eq!(node_d.parent_ways.len(), 0);
+            assert!(std::ptr::eq(&*node_d.get_parent_relation(Id(6)).unwrap(), &*relation));
 
-            let way_parent_relation = way.relations[0].borrow();
+            let way_parent_relation = way.get_parent_relation(Id(6)).unwrap();
             assert!(std::ptr::eq(&*way_parent_relation, &*relation));
 
-            let node_parent_relation = way.relations[0].borrow();
+            let node_parent_relation = way.get_parent_relation(Id(6)).unwrap();
             assert!(std::ptr::eq(&*node_parent_relation, &*relation));
 
             assert_eq!(relation.members.nodes.len(), 2);
             assert_eq!(relation.members.ways.len(), 1);
             assert_eq!(relation.members.relations.len(), 0);
 
-            assert!(std::ptr::eq(&*relation.get_node(0), &*node_d));
-            assert!(std::ptr::eq(&*relation.get_node(1), &*node_c));
-            assert!(std::ptr::eq(&*relation.get_way(0), &*way));
+            assert!(std::ptr::eq(&*relation.get_child_node(0).unwrap(), &*node_d));
+            assert!(std::ptr::eq(&*relation.get_child_node(1).unwrap(), &*node_c));
+            assert!(std::ptr::eq(&*relation.get_child_way(0).unwrap(), &*way));
 
         },
         Err(_) => {
@@ -284,29 +327,41 @@ fn test_relation_of_relations_parsing() {
             assert_eq!(map_data.ways.len(), 0);
             assert_eq!(map_data.relations.len(), 2);
 
-            let relation_a = map_data.get_relation(1).unwrap();
-            let relation_b = map_data.get_relation(2).unwrap();
+            let relation_a = map_data.get_relation(Id(1)).unwrap();
+            let relation_b = map_data.get_relation(Id(2)).unwrap();
 
             assert_eq!(relation_a.members.nodes.len(), 0);
             assert_eq!(relation_a.members.ways.len(), 0);
             assert_eq!(relation_a.members.relations.len(), 0);
-            assert_eq!(relation_a.relations.len(), 1);
+            assert_eq!(relation_a.parent_relations.len(), 1);
 
             assert_eq!(relation_b.members.nodes.len(), 0);
             assert_eq!(relation_b.members.ways.len(), 0);
             assert_eq!(relation_b.members.relations.len(), 1);
-            assert_eq!(relation_b.relations.len(), 0);
+            assert_eq!(relation_b.parent_relations.len(), 0);
 
-            let parent_relation = relation_a.get_parent_relation(0);
+            let parent_relation = relation_a.get_parent_relation(Id(2)).unwrap();
             assert!(std::ptr::eq(&*parent_relation, &*relation_b));
 
-            let child_relation = relation_b.get_relation(0);
+            let child_relation = relation_b.get_child_relation(0).unwrap();
             assert!(std::ptr::eq(&*child_relation, &*relation_a));
         },
         Err(_) => {
             assert!(false);
         }
     }
+}
+
+
+#[test]
+fn test_circular_relation_parsing() {
+
+}
+
+
+#[test]
+fn incomplete_relation_parsing() {
+
 }
 
 

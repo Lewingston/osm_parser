@@ -1,16 +1,16 @@
 
 use crate::map::{
+    Id,
     Relation,
     RelationMembers,
     RelationNode,
     RelationWay,
     RelationRelation,
-    RelationMemberRole
+    RelationMemberRole,
+    RelationMap
 };
 
 use std::str::FromStr;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 use serde_json::Value;
 
@@ -45,10 +45,10 @@ pub fn parse(relation: &JsonObj) -> Option<Relation> {
     let members = parse_members(member_array);
 
     Some(Relation {
-        id,
+        id: Id(id),
         tags,
         members,
-        relations: Vec::<Rc<RefCell<Relation>>>::new()
+        parent_relations: RelationMap::new()
     })
 }
 
@@ -103,7 +103,7 @@ fn parse_member(data: &JsonObj) -> RelationMember {
         RelationMemberRole::None
     };
 
-    let Some(id) = data.get("ref").and_then(Value::as_u64) else {
+    let Some(id) = data.get("ref").and_then(Value::as_u64).map(Id) else {
         println!("Relation member has no id!");
         return RelationMember::Undefined;
     };

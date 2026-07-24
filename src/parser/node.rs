@@ -1,14 +1,12 @@
 
 use crate::map::{
+    Id,
     Node,
-    Way,
-    Relation
+    WayMap,
+    RelationMap
 };
 
 use serde_json::Value;
-
-use std::rc::Rc;
-use std::cell::RefCell;
 
 use crate::parser::tags;
 
@@ -35,11 +33,11 @@ pub fn parse(node: &JsonObj) -> Option<Node> {
     let tags = node.get("tags").and_then(tags::parse);
 
     Some(Node {
-        id,
+        id: Id(id),
         latitude,
         longitude,
         tags,
-        ways: Vec::<Rc<RefCell<Way>>>::new(),
-        relations: Vec::<Rc<RefCell<Relation>>>::new()
+        parent_ways:      WayMap::new(),
+        parent_relations: RelationMap::new()
     })
 }

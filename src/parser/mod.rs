@@ -5,6 +5,7 @@ mod relation;
 mod tags;
 
 use crate::map::{
+    Id,
     MapData,
     Node,
     Way,
@@ -52,9 +53,9 @@ fn parse<R: std::io::Read>(reader: R) -> Result<MapData, Box<dyn std::error::Err
     let stream = Deserializer::from_reader(reader).into_iter::<Value>();
 
     let mut data = MapData {
-        nodes:     HashMap::<u64, Rc<RefCell<Node>>>::new(),
-        ways:      HashMap::<u64, Rc<RefCell<Way>>>::new(),
-        relations: HashMap::<u64, Rc<RefCell<Relation>>>::new()
+        nodes:     HashMap::<Id, Rc<RefCell<Node>>>::new(),
+        ways:      HashMap::<Id, Rc<RefCell<Way>>>::new(),
+        relations: HashMap::<Id, Rc<RefCell<Relation>>>::new()
     };
 
     for value in stream {
@@ -122,12 +123,16 @@ fn construct_ways(map: &mut MapData) {
 }
 
 
-fn construct_way(way: &Rc<RefCell<Way>>, nodes: &mut HashMap<u64, Rc<RefCell<Node>>>) {
+fn construct_way(way: &Rc<RefCell<Way>>, nodes: &mut HashMap<Id, Rc<RefCell<Node>>>) {
 
-    for way_node in &mut way.borrow_mut().nodes {
+    let parent_id = way.borrow().id;
 
-        let Some(node) = nodes.get(&way_node.id) else { continue; };
-        node.borrow_mut().ways.push(way.clone());
+    for way_node in &mut way.borrow_mut().child_nodes {
+
+        let child_id = way_node.id;
+
+        let Some(node) = nodes.get(&child_id) else { continue; };
+        node.borrow_mut().parent_ways.insert(parent_id, way.clone());
         way_node.node = Some(node.clone());
     }
 }
@@ -159,36 +164,40 @@ fn construct_relations(map: &mut MapData) {
 
 fn construct_relation(
     relation:  &Rc<RefCell<Relation>>,
-    nodes:     &mut HashMap<u64, Rc<RefCell<Node>>>,
-    ways:      &mut HashMap<u64, Rc<RefCell<Way>>>)
+    nodes:     &mut HashMap<Id, Rc<RefCell<Node>>>,
+    ways:      &mut HashMap<Id, Rc<RefCell<Way>>>)
 {
+    let parent_id = relation.borrow().id;
 
     for relation_node in &mut relation.borrow_mut().members.nodes {
 
-        let Some(node) = nodes.get(&relation_node.id) else { continue; };
-        node.borrow_mut().relations.push(relation.clone());
+        let child_id  = relation_node.id;
+        let Some(node) = nodes.get(&child_id) else { continue; };
+        node.borrow_mut().parent_relations.insert(parent_id, relation.clone());
         relation_node.node = Some(node.clone());
     }
 
     for relation_way in &mut relation.borrow_mut().members.ways {
 
-        let Some(way) = ways.get(&relation_way.id) else { continue; };
-        way.borrow_mut().relations.push(relation.clone());
+        let child_id = relation_way.id;
+        let Some(way) = ways.get(&child_id) else { continue; };
+        way.borrow_mut().parent_relations.insert(parent_id, relation.clone());
         relation_way.way = Some(way.clone());
     }
-
-    // TODO: Relations
 }
 
 
 fn construct_nested_relation(
     relation:  &Rc<RefCell<Relation>>,
-    relations: &mut HashMap<u64, Rc<RefCell<Relation>>>)
+    relations: &mut HashMap<Id, Rc<RefCell<Relation>>>)
 {
+    let parent_id = relation.borrow().id;
+
     for relation_relation in &mut relation.borrow_mut().members.relations {
 
-        let Some(child_relation) = relations.get(&relation_relation.id) else { continue; };
-        child_relation.borrow_mut().relations.push(relation.clone());
+        let child_id = relation_relation.id;
+        let Some(child_relation) = relations.get(&child_id) else { continue; };
+        child_relation.borrow_mut().parent_relations.insert(parent_id, relation.clone());
         relation_relation.relation = Some(child_relation.clone());
     }
 }
