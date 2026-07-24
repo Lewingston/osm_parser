@@ -145,7 +145,7 @@ fn construct_relations(map: &mut MapData) {
             &mut map.ways,
         );
 
-        if relation.borrow().members.relations.len() > 0 {
+        if !relation.borrow().members.relations.is_empty() {
             list_of_nested_relations.push(relation.clone());
         }
     }
