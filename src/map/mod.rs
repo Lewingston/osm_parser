@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 
 use std::rc::Rc;
+use std::cell::Ref;
 use std::cell::RefCell;
 
 mod feature;
@@ -15,6 +16,28 @@ pub struct MapData {
     pub nodes:     HashMap<u64, Rc<RefCell<Node>>>,
     pub ways:      HashMap<u64, Rc<RefCell<Way>>>,
     pub relations: HashMap<u64, Rc<RefCell<Relation>>>
+}
+
+
+impl MapData {
+
+    #[must_use]
+    pub fn get_node(&self, id: u64) -> Option<Ref<'_, Node>> {
+
+        self.nodes.get(&id).map(|node| node.borrow())
+    }
+
+    #[must_use]
+    pub fn get_way(&self, id: u64) -> Option<Ref<'_, Way>> {
+
+        self.ways.get(&id).map(|way| way.borrow())
+    }
+
+    #[must_use]
+    pub fn get_relation(&self, id: u64) -> Option<Ref<'_, Relation>> {
+
+        self.relations.get(&id).map(|relation| relation.borrow())
+    }
 }
 
 

@@ -1,36 +1,9 @@
 
-use osm_parser::map::MapData;
 use osm_parser::map::Node;
 use osm_parser::map::Way;
 use osm_parser::map::Relation;
 
 use std::cell::Ref;
-
-pub trait MapDataTestExtension {
-
-    fn get_node(&self, id: u64) -> Ref<'_, Node>;
-    fn get_way(&self, id: u64) -> Ref<'_, Way>;
-    fn get_relation(&self, id: u64) -> Ref<'_, Relation>;
-}
-
-
-impl MapDataTestExtension for MapData {
-
-    fn get_node(&self, id: u64) -> Ref<'_, Node> {
-
-        self.nodes.get(&id).expect("no node with id {id} in this map").borrow()
-    }
-
-    fn get_way(&self, id: u64) -> Ref<'_, Way> {
-
-        self.ways.get(&id).expect("no way with id {id} in this map").borrow()
-    }
-
-    fn get_relation(&self, id: u64) -> Ref<'_, Relation> {
-
-        self.relations.get(&id).expect("no relation with id {id} in this map").borrow()
-    }
-}
 
 
 pub trait NodeTestExtension {

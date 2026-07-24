@@ -3,7 +3,6 @@ use osm_parser::parser;
 
 mod test_utils;
 
-use test_utils::MapDataTestExtension;
 use test_utils::NodeTestExtension;
 use test_utils::WayTestExtension;
 use test_utils::RelationExtension;
@@ -28,9 +27,10 @@ fn test_node_parsing() {
     match parser::from_string(json_data) {
         Ok(map_data) => {
 
-            let node = map_data.get_node(1);
+            let id: u64 = 1;
+            let node = map_data.get_node(id).unwrap();
 
-            assert_eq!(node.id, 1);
+            assert_eq!(node.id, id);
             assert_eq!(node.latitude, 1.0);
             assert_eq!(node.longitude, 3.0);
             assert_eq!(node.ways.len(), 0);
@@ -95,12 +95,12 @@ fn test_way_parsing() {
             assert_eq!(map_data.nodes.len(), 3);
             assert_eq!(map_data.ways.len(), 2);
 
-            let node_a = map_data.get_node(1);
-            let node_b = map_data.get_node(2);
-            let node_c = map_data.get_node(3);
+            let node_a = map_data.get_node(1).unwrap();
+            let node_b = map_data.get_node(2).unwrap();
+            let node_c = map_data.get_node(3).unwrap();
 
-            let way_a = map_data.get_way(4);
-            let way_b = map_data.get_way(5);
+            let way_a = map_data.get_way(4).unwrap();
+            let way_b = map_data.get_way(5).unwrap();
 
             assert_eq!(node_a.ways.len(), 2);
             assert!(std::ptr::eq(&*node_a.get_parent_way_by_id(4), &*way_a));
@@ -203,14 +203,14 @@ fn test_relation_parsing() {
             assert_eq!(map_data.ways.len(), 1);
             assert_eq!(map_data.relations.len(), 1);
 
-            let node_a = map_data.get_node(1);
-            let node_b = map_data.get_node(2);
-            let node_c = map_data.get_node(3);
-            let node_d = map_data.get_node(4);
+            let node_a = map_data.get_node(1).unwrap();
+            let node_b = map_data.get_node(2).unwrap();
+            let node_c = map_data.get_node(3).unwrap();
+            let node_d = map_data.get_node(4).unwrap();
 
-            let way = map_data.get_way(5);
+            let way = map_data.get_way(5).unwrap();
 
-            let relation = map_data.get_relation(6);
+            let relation = map_data.get_relation(6).unwrap();
 
             assert_eq!(relation.id, 6);
 
@@ -284,8 +284,8 @@ fn test_relation_of_relations_parsing() {
             assert_eq!(map_data.ways.len(), 0);
             assert_eq!(map_data.relations.len(), 2);
 
-            let relation_a = map_data.get_relation(1);
-            let relation_b = map_data.get_relation(2);
+            let relation_a = map_data.get_relation(1).unwrap();
+            let relation_b = map_data.get_relation(2).unwrap();
 
             assert_eq!(relation_a.members.nodes.len(), 0);
             assert_eq!(relation_a.members.ways.len(), 0);
