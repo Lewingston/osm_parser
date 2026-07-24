@@ -588,6 +588,78 @@ fn incomplete_relation_parsing() {
 #[test]
 fn test_circular_relation_parsing() {
 
+    let json_data = r#"
+    {
+        "elements": [
+            {
+                "type": "relation",
+                "id": 1,
+                "members": [
+                    {
+                        "type": "relation",
+                        "ref": 2,
+                        "role": ""
+                    }
+                ]
+            },
+            {
+                "type": "relation",
+                "id": 2,
+                "members": [
+                    {
+                        "type": "relation",
+                        "ref": 3,
+                        "role": ""
+                    }
+                ]
+            },
+            {
+                "type": "relation",
+                "id": 3,
+                "members": [
+                    {
+                        "type": "relation",
+                        "ref": 1,
+                        "role": ""
+                    }
+                ]
+            }
+        ]
+    }
+    "#;
+
+    match parser::from_string(json_data) {
+        Ok(map_data) => {
+
+            let rel1 = map_data.get_relation(Id(1)).unwrap();
+            let rel2 = map_data.get_relation(Id(2)).unwrap();
+            let rel3 = map_data.get_relation(Id(3)).unwrap();
+
+            assert_eq!(rel1.members.relations.len(), 1);
+            assert_eq!(rel1.parent_relations.len(), 1);
+            assert_eq!(rel2.members.relations.len(), 1);
+            assert_eq!(rel2.parent_relations.len(), 1);
+            assert_eq!(rel3.members.relations.len(), 1);
+            assert_eq!(rel3.parent_relations.len() , 1);
+
+            assert!(std::ptr::eq(&*rel1.get_child_relation(0).unwrap(), &*rel2));
+            assert!(std::ptr::eq(&*rel1.get_parent_relation(Id(3)).unwrap(), &*rel3));
+
+            assert!(std::ptr::eq(&*rel2.get_child_relation(0).unwrap(), &*rel3));
+            assert!(std::ptr::eq(&*rel2.get_parent_relation(Id(1)).unwrap(), &*rel1));
+
+            assert!(std::ptr::eq(&*rel3.get_child_relation(0).unwrap(), &*rel1));
+            assert!(std::ptr::eq(&*rel3.get_parent_relation(Id(2)).unwrap(), &*rel2));
+
+            assert!(rel1.is_complete());
+            assert!(rel2.is_complete());
+            assert!(rel3.is_complete());
+
+        },
+        Err(err) => {
+            assert!(false, "{}", err.to_string());
+        }
+    }
 }
 
 
