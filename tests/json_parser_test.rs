@@ -32,9 +32,7 @@ fn test_node_parsing() {
             assert_eq!(node.parent_relations.len(), 0);
 
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 }
 
@@ -123,9 +121,7 @@ fn test_way_parsing() {
             assert!(way_a.is_complete());
             assert!(way_b.is_complete());
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 }
 
@@ -173,9 +169,7 @@ fn test_incomplete_way_parsing() {
 
             assert!(!way.is_complete());
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 }
 
@@ -293,9 +287,7 @@ fn test_relation_parsing() {
             assert!(relation.is_complete());
 
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 }
 
@@ -353,9 +345,7 @@ fn test_relation_of_relations_parsing() {
             let child_relation = relation_b.get_child_relation(0).unwrap();
             assert!(std::ptr::eq(&*child_relation, &*relation_a));
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 }
 
@@ -438,9 +428,7 @@ fn incomplete_relation_parsing() {
             assert!(!relation.is_complete());
 
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 
     let json_data_missing_way = r#"
@@ -510,9 +498,7 @@ fn incomplete_relation_parsing() {
 
             assert!(!relation.is_complete());
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 
     let json_data_missing_relation = r#"
@@ -578,9 +564,7 @@ fn incomplete_relation_parsing() {
 
             assert!(!relation.is_complete());
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 }
 
@@ -656,9 +640,7 @@ fn test_circular_relation_parsing() {
             assert!(rel3.is_complete());
 
         },
-        Err(err) => {
-            assert!(false, "{}", err.to_string());
-        }
+        Err(err) => { assert!(false, "{err}"); }
     }
 }
 
