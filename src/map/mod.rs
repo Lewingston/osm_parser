@@ -31,6 +31,16 @@ pub struct MapData {
 impl MapData {
 
     #[must_use]
+    pub fn create_empty_map() -> Self {
+
+        Self {
+            nodes:     NodeMap::new(),
+            ways:      WayMap::new(),
+            relations: RelationMap::new()
+        }
+    }
+
+    #[must_use]
     pub fn get_node(&self, id: Id) -> Option<Ref<'_, Node>> {
 
         self.nodes.get(&id).map(|node| node.borrow())

@@ -52,11 +52,7 @@ fn parse<R: std::io::Read>(reader: R) -> Result<MapData, Box<dyn std::error::Err
 
     let stream = Deserializer::from_reader(reader).into_iter::<Value>();
 
-    let mut data = MapData {
-        nodes:     HashMap::<Id, Rc<RefCell<Node>>>::new(),
-        ways:      HashMap::<Id, Rc<RefCell<Way>>>::new(),
-        relations: HashMap::<Id, Rc<RefCell<Relation>>>::new()
-    };
+    let mut data = MapData::create_empty_map();
 
     for value in stream {
 
