@@ -9,3 +9,6 @@ strum = "0.28"
 strum_macros = "0.28"
 enum_dispatch = "0.3.13"
 osm_parser_macros = { path = "./osm_parser_macros" }
+
+[dev-dependencies]
+approx = "0.5.1"

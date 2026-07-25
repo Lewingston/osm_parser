@@ -57,6 +57,41 @@ impl MapData {
 
         self.relations.get(&id).map(|relation| relation.borrow())
     }
+
+    #[must_use]
+    pub fn get_dimensions(&self) -> Dimensions {
+
+        let mut min_lon = f64::MAX;
+        let mut max_lon = f64::MIN;
+        let mut min_lat = f64::MAX;
+        let mut max_lat = f64::MIN;
+
+        for node in self.nodes.values().map(|node| node.borrow()) {
+
+            if node.latitude < min_lat {
+                min_lat = node.latitude;
+            }
+
+            if node.latitude > max_lat {
+                max_lat = node.latitude;
+            }
+
+            if node.longitude < min_lon {
+                min_lon = node.longitude;
+            }
+
+            if node.longitude > max_lon {
+                max_lon = node.longitude;
+            }
+        }
+
+        Dimensions {
+            min_lat,
+            min_lon,
+            max_lat,
+            max_lon
+        }
+    }
 }
 
 
@@ -271,4 +306,37 @@ pub struct RelationRelation {
     pub relation: Option<Rc<RefCell<Relation>>>,
     pub id:       Id,
     pub role:     RelationMemberRole
+}
+
+
+pub struct Dimensions {
+
+    pub min_lat: f64,
+    pub min_lon: f64,
+    pub max_lat: f64,
+    pub max_lon: f64
+}
+
+
+impl Dimensions {
+
+    #[must_use]
+    pub fn get_center(&self) -> (f64, f64) {
+        (
+            self.min_lon + self.get_width() / 2.0,
+            self.min_lat + self.get_height() / 2.0
+        )
+    }
+
+    #[must_use]
+    pub fn get_width(&self) -> f64 {
+
+        self.max_lon - self.min_lon
+    }
+
+    #[must_use]
+    pub fn get_height(&self) -> f64 {
+
+        self.max_lat - self.min_lat
+    }
 }
