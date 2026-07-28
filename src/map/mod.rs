@@ -309,6 +309,7 @@ pub struct RelationRelation {
 }
 
 
+#[derive(Clone)]
 pub struct Dimensions {
 
     pub min_lat: f64,
