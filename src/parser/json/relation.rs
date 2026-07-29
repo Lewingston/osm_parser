@@ -14,7 +14,7 @@ use std::str::FromStr;
 
 use serde_json::Value;
 
-use crate::parser::tags;
+use crate::parser::json::tags;
 
 type JsonObj = serde_json::Map<String, Value>;
 type JsonArray = Vec<Value>;

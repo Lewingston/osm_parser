@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let data = parser::from_file("bingen.json")?;
+    let data = parser::json::from_file("bingen.json")?;
 
     let nodes_with_tags = data.nodes.iter().filter(|(_, node)| node.borrow().tags.is_some()).count();
     let nodes_without_tags = data.nodes.iter().filter(|(_, node)| node.borrow().tags.is_none()).count();
