@@ -18,6 +18,18 @@ use protos::fileformat::blob;
 use protobuf::Message;
 
 
+enum BlobType {
+    OsmHeader,
+    OsmData
+}
+
+
+struct BlobInfo {
+    data_size: usize,
+    type_:     BlobType
+}
+
+
 pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>> {
 
     let file   = std::fs::File::open(file_name)?;
@@ -66,9 +78,9 @@ fn read_blob<R: std::io::Read>(
     blob_num:    usize
 ) -> Result<(), Box<dyn std::error::Error>> {
 
-    let blob_size = read_blob_header(reader, header_size, blob_num)?;
+    let blob_info = read_blob_header(reader, header_size, blob_num)?;
 
-    read_blob_data(reader, blob_size as usize)?;
+    let blob_data = read_blob_data(reader, blob_info.data_size)?;
 
     Ok(())
 }
@@ -78,7 +90,7 @@ fn read_blob_header<R: std::io::Read>(
     reader:   &mut R,
     size:     usize,
     blob_num: usize
-) -> Result<i32, Box<dyn std::error::Error>> {
+) -> Result<BlobInfo, Box<dyn std::error::Error>> {
 
     let mut buffer = vec![0u8; size];
     reader.read_exact(&mut buffer)?;
@@ -88,34 +100,39 @@ fn read_blob_header<R: std::io::Read>(
         Err(err) => { println!("{err}"); return Err(Box::new(err)); }
     };
 
-    if let Some(type_) = blob_header.type_ {
-        match type_.as_str() {
-            "OSMHeader" => {}
-            "OSMData"   => {}
-            _ => { return Err(Box::new(Error::UnknownBlobHeaderType(type_))); }
-        }
-    } else {
+    let Some(type_) = blob_header.type_ else {
         return Err(Box::new(Error::BlobHeaderTypeMissing(blob_num)));
-    }
+    };
+
+    let type_ = match type_.as_str() {
+        "OSMHeader" => { BlobType::OsmHeader }
+        "OSMData"   => { BlobType::OsmData }
+        _ => { return Err(Box::new(Error::UnknownBlobHeaderType(type_))); }
+    };
 
     if blob_header.indexdata.is_some() {
         return Err(Box::new(Error::UnknownIndexDataInBlobHeader(blob_num)));
     }
 
-    if let Some(datasize) = blob_header.datasize {
-        println!("Data size: {datasize}");
-        Ok(datasize)
-    } else {
-        println!("No data size!");
-        Ok(0)
-    }
+    let Some(data_size) = blob_header.datasize else {
+        return Err(Box::new(Error::BlobError(BlobError::NoDataSize, blob_num)));
+    };
+
+    let Ok(data_size) = data_size.try_into() else {
+        return Err(Box::new(Error::BlobError(BlobError::DataSizeOutOfRange(data_size), blob_num)));
+    };
+
+    Ok(BlobInfo {
+        data_size,
+        type_
+    })
 }
 
 
 fn read_blob_data<R: std::io::Read>(
     reader: &mut R,
     size:   usize
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 
     let mut buffer = vec![0u8; size];
     reader.read_exact(&mut buffer)?;
@@ -125,53 +142,53 @@ fn read_blob_data<R: std::io::Read>(
         Err(err) => { println!("{err}"); return Err(Box::new(err)); }
     };
 
-    parse_blob(blob)?;
-
-    Ok(())
+    match parse_blob(blob) {
+        Ok(data) => { Ok(data) },
+        Err(err) => { Err(Box::new(err)) }
+    }
 }
 
 
-fn parse_blob(blob: Blob) -> Result<(), Error>{
+fn parse_blob(blob: Blob) -> Result<Vec<u8>, BlobError>{
 
     let Some(raw_size) = blob.raw_size else {
-        return Err(Error::BlobError(BlobError::NoRawDataSize));
+        return Err(BlobError::NoRawDataSize);
     };
 
     let Ok(raw_size) = raw_size.try_into() else {
-        return Err(Error::BlobError(BlobError::RawDataSizeOutOfRange(raw_size)));
+        return Err(BlobError::DataSizeOutOfRange(raw_size));
     };
 
     if let Some(data) = blob.data {
 
         match data {
             blob::Data::Raw(_) => {
-                Err(Error::CompressionNotSupported("Raw".to_string()))
+                Err(BlobError::CompressionNotSupported("Raw".to_string()))
             }
             blob::Data::ZlibData(data) => {
-                uncompress_zlib(&data, raw_size)?;
-                Ok(())
+                uncompress_zlib(&data, raw_size)
             }
             blob::Data::LzmaData(_) => {
-                Err(Error::CompressionNotSupported("Lzma".to_string()))
+                Err(BlobError::CompressionNotSupported("Lzma".to_string()))
             }
             blob::Data::OBSOLETEBzip2Data(_) => {
-                Err(Error::CompressionNotSupported("Bzip2 (obsolete)".to_string()))
+                Err(BlobError::CompressionNotSupported("Bzip2 (obsolete)".to_string()))
             }
             blob::Data::Lz4Data(_) => {
-                Err(Error::CompressionNotSupported("Lz4".to_string()))
+                Err(BlobError::CompressionNotSupported("Lz4".to_string()))
             }
             blob::Data::ZstdData(_) => {
-                Err(Error::CompressionNotSupported("Zstd".to_string()))
+                Err(BlobError::CompressionNotSupported("Zstd".to_string()))
             }
         }
 
     } else {
-        Err(Error::BlobError(BlobError::NoData))
+        Err(BlobError::NoData)
     }
 }
 
 
-fn uncompress_zlib(compressed_data: &[u8], raw_size: usize) -> Result<(), Error> {
+fn uncompress_zlib(compressed_data: &[u8], raw_size: usize) -> Result<Vec<u8>, BlobError> {
 
     let mut data = vec![0u8; raw_size];
     let (decompressed, rc) =
@@ -182,16 +199,16 @@ fn uncompress_zlib(compressed_data: &[u8], raw_size: usize) -> Result<(), Error>
         );
 
     if rc != zlib_rs::ReturnCode::Ok {
-        return Err(Error::ZlibDecompressionError(
+        return Err(BlobError::ZlibDecompressionError(
             zlib_return_code_to_string(rc)
         ));
     }
 
     if decompressed.len() != raw_size {
-        return Err(Error::BlobError(BlobError::DecompressedDataSizeMismatch));
+        return Err(BlobError::DecompressedDataSizeMismatch);
     }
 
-    Ok(())
+    Ok(data)
 }
 
 

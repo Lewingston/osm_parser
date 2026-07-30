@@ -4,10 +4,8 @@ pub enum Error {
 
     UnknownBlobHeaderType(String),
     BlobHeaderTypeMissing(usize),
-    CompressionNotSupported(String),
     UnknownIndexDataInBlobHeader(usize),
-    BlobError(BlobError),
-    ZlibDecompressionError(String)
+    BlobError(BlobError, usize)
 }
 
 impl std::error::Error for Error {}
@@ -17,9 +15,11 @@ impl std::error::Error for Error {}
 pub enum BlobError {
     NoDataSize,
     NoRawDataSize,
-    RawDataSizeOutOfRange(i32),
+    DataSizeOutOfRange(i32),
     NoData,
-    DecompressedDataSizeMismatch
+    CompressionNotSupported(String),
+    DecompressedDataSizeMismatch,
+    ZlibDecompressionError(String)
 }
 
 impl std::error::Error for BlobError {}
@@ -37,18 +37,12 @@ impl std::fmt::Display for Error {
             Error::BlobHeaderTypeMissing(blob_num) => {
                 write!(f, "Blob header type missing. Blob nr. {blob_num}")
             }
-            Error::CompressionNotSupported(msg) => {
-                write!(f, "Unsupported data compression: {msg}")
-            },
             Error::UnknownIndexDataInBlobHeader(blob_num) => {
                 write!(f, "Unknown index data in blob header. Blob nr. {blob_num}")
             },
-            Error::BlobError(blob_error) => {
-                blob_error.fmt(f)
+            Error::BlobError(blob_error, blob_num) => {
+                write!(f, "Error in blob Nr. {blob_num} - {blob_error}")
             },
-            Error::ZlibDecompressionError(msg) => {
-                write!(f, "Zlib decompression error: {msg}")
-            }
         }
     }
 }
@@ -65,14 +59,20 @@ impl std::fmt::Display for BlobError {
             BlobError::NoRawDataSize => {
                 write!(f, "Blob has no raw data size")
             }
-            BlobError::RawDataSizeOutOfRange(size) => {
-                write!(f, "Raw data size out of range: {size}")
+            BlobError::DataSizeOutOfRange(size) => {
+                write!(f, "Data size out of range: {size}")
             }
             BlobError::NoData => {
                 write!(f, "Blob has no data")
             }
+            BlobError::CompressionNotSupported(msg) => {
+                write!(f, "Unsupported data compression: {msg}")
+            }
             BlobError::DecompressedDataSizeMismatch => {
                 write!(f, "Unexpected size of decompressed data")
+            }
+            BlobError::ZlibDecompressionError(msg) => {
+                write!(f, "Zlib decompression error: {msg}")
             }
         }
     }
