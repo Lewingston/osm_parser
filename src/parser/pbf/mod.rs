@@ -8,6 +8,8 @@ mod error;
 use error::Error;
 use error::BlobError;
 
+#[allow(warnings)]
+#[allow(clippy::all)]
 mod protos {
     include!(concat!(env!("OUT_DIR"), "/osmpbf/mod.rs"));
 }
@@ -30,6 +32,9 @@ struct BlobInfo {
 }
 
 
+/// # Errors
+///
+/// Returns an error when parsing of the file failed.
 pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>> {
 
     let file   = std::fs::File::open(file_name)?;
@@ -56,7 +61,7 @@ fn parse<R: std::io::Read>(mut reader: R) -> Result<MapData, Box<dyn std::error:
                 println!("Blob: {blob_count}");
                 read_blob(&mut reader, header_size, blob_count)?;
                 blob_count += 1;
-                println!("");
+                println!();
 
             }
             Err(err) => match err.kind() {
@@ -80,7 +85,7 @@ fn read_blob<R: std::io::Read>(
 
     let blob_info = read_blob_header(reader, header_size, blob_num)?;
 
-    let blob_data = read_blob_data(reader, blob_info.data_size)?;
+    let _blob_data = read_blob_data(reader, blob_info.data_size)?;
 
     Ok(())
 }
@@ -142,14 +147,14 @@ fn read_blob_data<R: std::io::Read>(
         Err(err) => { println!("{err}"); return Err(Box::new(err)); }
     };
 
-    match parse_blob(blob) {
+    match decompress_blob_data(blob) {
         Ok(data) => { Ok(data) },
         Err(err) => { Err(Box::new(err)) }
     }
 }
 
 
-fn parse_blob(blob: Blob) -> Result<Vec<u8>, BlobError>{
+fn decompress_blob_data(blob: Blob) -> Result<Vec<u8>, BlobError>{
 
     let Some(raw_size) = blob.raw_size else {
         return Err(BlobError::NoRawDataSize);
@@ -159,31 +164,27 @@ fn parse_blob(blob: Blob) -> Result<Vec<u8>, BlobError>{
         return Err(BlobError::DataSizeOutOfRange(raw_size));
     };
 
-    if let Some(data) = blob.data {
+    let Some(data) = blob.data else { return Err(BlobError::NoData); };
 
-        match data {
-            blob::Data::Raw(_) => {
-                Err(BlobError::CompressionNotSupported("Raw".to_string()))
-            }
-            blob::Data::ZlibData(data) => {
-                uncompress_zlib(&data, raw_size)
-            }
-            blob::Data::LzmaData(_) => {
-                Err(BlobError::CompressionNotSupported("Lzma".to_string()))
-            }
-            blob::Data::OBSOLETEBzip2Data(_) => {
-                Err(BlobError::CompressionNotSupported("Bzip2 (obsolete)".to_string()))
-            }
-            blob::Data::Lz4Data(_) => {
-                Err(BlobError::CompressionNotSupported("Lz4".to_string()))
-            }
-            blob::Data::ZstdData(_) => {
-                Err(BlobError::CompressionNotSupported("Zstd".to_string()))
-            }
+    match data {
+        blob::Data::Raw(_) => {
+            Err(BlobError::CompressionNotSupported("Raw".to_string()))
         }
-
-    } else {
-        Err(BlobError::NoData)
+        blob::Data::ZlibData(data) => {
+            uncompress_zlib(&data, raw_size)
+        }
+        blob::Data::LzmaData(_) => {
+            Err(BlobError::CompressionNotSupported("Lzma".to_string()))
+        }
+        blob::Data::OBSOLETEBzip2Data(_) => {
+            Err(BlobError::CompressionNotSupported("Bzip2 (obsolete)".to_string()))
+        }
+        blob::Data::Lz4Data(_) => {
+            Err(BlobError::CompressionNotSupported("Lz4".to_string()))
+        }
+        blob::Data::ZstdData(_) => {
+            Err(BlobError::CompressionNotSupported("Zstd".to_string()))
+        }
     }
 }
 
