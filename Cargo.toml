@@ -2,6 +2,7 @@
 name = "osm_parser"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 serde_json = "1.0"
@@ -9,6 +10,19 @@ strum = "0.28"
 strum_macros = "0.28"
 enum_dispatch = "0.3.13"
 osm_parser_macros = { path = "./osm_parser_macros" }
+zlib-rs = "0.6.6"
+
+[dependencies.protobuf]
+version = "3.7.2"
+package = "protobuf"
+
+[build-dependencies.protobuf-codegen]
+version = "3.7.2"
+package = "protobuf-codegen"
+
+[build-dependencies.protoc-bin-vendored]
+version = "3.2.0"
+package = "protoc-bin-vendored"
 
 [dev-dependencies]
 approx = "0.5.1"

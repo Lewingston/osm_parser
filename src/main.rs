@@ -6,6 +6,9 @@ use std::collections::HashSet;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
+    let data = parser::pbf::from_file("bremen-260728.osm.pbf")?;
+
+    /*
     let data = parser::json::from_file("bingen.json")?;
 
     let nodes_with_tags = data.nodes.iter().filter(|(_, node)| node.borrow().tags.is_some()).count();
@@ -78,6 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Number of nodes without feature: {num_nodes_without_feat}");
     println!("Number of ways without feature: {num_ways_without_feat}");
     println!("Number of relations without feature: {num_relations_without_feat}");
+    */
 
     /*
     for feat in features {

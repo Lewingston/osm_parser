@@ -52,7 +52,7 @@ fn parse<R: std::io::Read>(reader: R) -> Result<MapData, Box<dyn std::error::Err
 
     let stream = Deserializer::from_reader(reader).into_iter::<Value>();
 
-    let mut data = MapData::create_empty_map();
+    let mut map = MapData::create_empty_map();
 
     for value in stream {
 
@@ -67,22 +67,22 @@ fn parse<R: std::io::Read>(reader: R) -> Result<MapData, Box<dyn std::error::Err
             let Some(result) = parse_element(element) else { continue };
             match result {
                 OsmPrimitive::Node(node) => {
-                    data.nodes.insert(node.id, Rc::new(RefCell::new(node)));
+                    map.nodes.insert(node.id, Rc::new(RefCell::new(node)));
                 },
                 OsmPrimitive::Way(way) => {
-                    data.ways.insert(way.id, Rc::new(RefCell::new(way)));
+                    map.ways.insert(way.id, Rc::new(RefCell::new(way)));
                 },
                 OsmPrimitive::Relation(relation) => {
-                    data.relations.insert(relation.id, Rc::new(RefCell::new(relation)));
+                    map.relations.insert(relation.id, Rc::new(RefCell::new(relation)));
                 }
             }
         }
     }
 
-    construct_ways(&mut data);
-    construct_relations(&mut data);
+    construct_ways(&mut map);
+    construct_relations(&mut map);
 
-    Ok(data)
+    Ok(map)
 }
 
 
