@@ -244,19 +244,6 @@ impl Tag {
 
         Self { key, value }
     }
-
-    #[must_use]
-    pub fn to_feature(&self) -> Option<Feature> {
-
-        for feature in Feature::iter() {
-
-            if let Some(feature) = feature.create(&self.value) {
-                return Some(feature);
-            }
-        }
-
-        None
-    }
 }
 
 
