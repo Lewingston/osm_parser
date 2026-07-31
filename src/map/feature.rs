@@ -1695,7 +1695,7 @@ pub enum Waterway {
     Fuel,
 }
 
-#[derive(Display, EnumIter, EnumString, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Display, EnumIter, EnumString, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[strum(serialize_all = "snake_case")]
 #[enum_dispatch(FeatureSubType)]
 pub enum Feature {

@@ -648,6 +648,57 @@ fn test_circular_relation_parsing() {
 #[test]
 fn test_tag_parsing() {
 
+    use osm_parser::map::feature;
+    use osm_parser::map::feature::Feature;
+    use osm_parser::map::Tag;
+
+    let json_data = r#"
+    {
+        "elements": [
+            {
+                "type": "node",
+                "id": 1,
+                "lat": 0.0,
+                "lon": 0.0,
+                "tags": {
+                    "education": "college",
+                    "building": "college",
+                    "amenity": "ice_cream",
+                    "railway": "not a matching sub type!",
+                    "some": "thing",
+                    "some other": "a other thing"
+                }
+            }
+        ]
+    }
+    "#;
+
+    match parser::json::from_string(json_data) {
+        Ok(map_data) => {
+
+            let node = map_data.get_node(Id(1)).unwrap();
+
+            let Some(tags) = &node.tags else { assert!(false, "No tags in node"); return; };
+
+            assert_eq!(tags.features.len(), 3);
+            assert_eq!(tags.other_tags.len(), 3);
+
+            assert!(tags.features.contains(&Feature::Education(feature::Education::College)));
+            assert!(tags.features.contains(&Feature::Building(feature::Building::College)));
+            assert!(tags.features.contains(&Feature::Amenity(feature::Amenity::IceCream)));
+
+            let tag_1 = Tag::new("some".to_string(), "thing".to_string());
+            assert!(tags.other_tags.contains(&tag_1));
+
+            let tag_2 = Tag::new("some other".to_string(), "a other thing".to_string());
+            assert!(tags.other_tags.contains(&tag_2));
+
+            let tag_3 = Tag::new("railway".to_string(), "not a matching sub type!".to_string());
+            assert!(tags.other_tags.contains(&tag_3));
+
+        },
+        Err(err) => { assert!(false, "{err}"); }
+    }
 }
 
 

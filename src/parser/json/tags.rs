@@ -1,5 +1,6 @@
 
 use crate::map::{
+    Tag,
     Tags,
     Feature,
     FeatureSubType
@@ -19,33 +20,51 @@ pub fn parse(tags: &Value) -> Option<Tags> {
         return None
     };
 
-    let features = get_features(tags);
+    //let features = get_features(tags);
+
+    let mut features   = Vec::<Feature>::new();
+    let mut other_tags = Vec::<Tag>::new();
+
+    for tag in tags {
+
+        let key = tag.0;
+        let Some(value) = tag.1.as_str() else {
+            println!("Map attribute value is not a string: {key} - {}", tag.1);
+            continue;
+        };
+
+        if key.parse::<Feature>().is_ok() {
+
+            match create_feature(key, value) {
+                Some(feature) => {
+                    features.push(feature);
+                }
+                None => {
+                    println!("{key} - {value}");
+                    other_tags.push(Tag::new(key.to_string(), value.to_string()));
+                }
+            };
+        } else {
+
+            other_tags.push(Tag::new(key.to_string(), value.to_string()))
+        }
+    }
 
     Some(Tags {
-        features
+        features,
+        other_tags
     })
 }
 
 
-fn get_features(tags: &JsonObj) -> Vec<Feature> {
-
-    let mut features = Vec::<Feature>::new();
+fn create_feature(type_: &str, sub_type: &str) -> Option<Feature> {
 
     for feature in Feature::iter() {
 
-        let feature_name = feature.to_string();
-
-        let Some(feat_attr) = tags.get(&feature_name) else { continue };
-        let Some(feat_attr) = feat_attr.as_str() else {
-            println!("Map feature attribute is not a string: {feature}");
-            continue
-        };
-
-        match feature.create(feat_attr) {
-            Some(feature) => features.push(feature),
-            None => { println!("{feature_name} - {feat_attr}"); }
+        if type_ == feature.to_string() {
+            return feature.create(sub_type);
         }
     }
 
-    features
+    None
 }

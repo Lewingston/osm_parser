@@ -9,6 +9,7 @@ use error::Error;
 use error::BlobError;
 
 mod osm_block;
+mod string_table;
 
 #[allow(warnings)]
 #[allow(clippy::all)]

@@ -15,6 +15,7 @@ use crate::map::{
 };
 
 use crate::parser::pbf::error::OsmBlockError;
+use crate::parser::pbf::string_table::StringTable;
 
 pub type Nodes     = Vec<Rc<RefCell<Node>>>;
 pub type Ways      = Vec<Rc<RefCell<Way>>>;
@@ -85,7 +86,7 @@ pub fn parse(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
         println!("Date granularity: {date_gran}");
     }
 
-    _ = block.parse();
+    block.parse()?;
 
     Ok(())
 }
@@ -93,13 +94,75 @@ pub fn parse(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
 
 trait MapDataParser {
 
+    fn parse(&self, string_table: &StringTable) -> Result<MapData, OsmBlockError>;
+}
+
+
+trait PrimitiveBlockEx {
+
     fn parse(&self) -> Result<MapData, OsmBlockError>;
 }
 
 
-impl MapDataParser for PrimitiveBlock {
+impl PrimitiveBlockEx for PrimitiveBlock {
 
     fn parse(&self) -> Result<MapData, OsmBlockError> {
+
+        const THIS_TYPE: &str = "PrimitiveBlock";
+
+        let string_table = StringTable::new(&self.stringtable)?;
+        println!("String table entries: {}", string_table.len());
+
+        if self.granularity.is_some() {
+            return Err(OsmBlockError::UnsupportedAttribute("granularity", THIS_TYPE));
+        }
+        if self.lat_offset.is_some() {
+            return Err(OsmBlockError::UnsupportedAttribute("lat_offset", THIS_TYPE));
+        }
+        if self.lon_offset.is_some() {
+            return Err(OsmBlockError::UnsupportedAttribute("lon_offset", THIS_TYPE));
+        }
+        if self.date_granularity.is_some() {
+            return Err(OsmBlockError::UnsupportedAttribute("date_granularity", THIS_TYPE));
+        }
+
+        for group in &self.primitivegroup {
+
+            group.parse(&string_table)?;
+        }
+
+        Ok(MapData::new())
+    }
+}
+
+
+impl MapDataParser for protos::osmformat::PrimitiveGroup {
+
+    fn parse(&self, string_table: &StringTable) -> Result<MapData, OsmBlockError> {
+
+        for node in &self.nodes {
+
+            node.parse(string_table)?;
+        }
+
+        if let Some(dense_nodes) = &self.dense.0 {
+
+            dense_nodes.parse(string_table)?;
+        }
+
+        for way in &self.ways {
+
+            way.parse(string_table)?;
+        }
+
+        for relation in &self.relations {
+
+            relation.parse(string_table)?;
+        }
+
+        if self.changesets.len() > 0 {
+            return Err(OsmBlockError::UnsupportedAttribute("changesets", "PrimitiveGroup"));
+        }
 
         Ok(MapData::new())
     }
@@ -108,7 +171,7 @@ impl MapDataParser for PrimitiveBlock {
 
 impl MapDataParser for protos::osmformat::Node {
 
-     fn parse(&self) -> Result<MapData, OsmBlockError> {
+     fn parse(&self, _string_table: &StringTable) -> Result<MapData, OsmBlockError> {
 
          Err(OsmBlockError::ParserNotImplemented("Node"))
      }
@@ -117,16 +180,39 @@ impl MapDataParser for protos::osmformat::Node {
 
 impl MapDataParser for protos::osmformat::DenseNodes {
 
-    fn parse(&self) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, _string_table: &StringTable) -> Result<MapData, OsmBlockError> {
 
-         Err(OsmBlockError::ParserNotImplemented("DenseNode"))
+        if self.id.len() != self.lat.len() ||
+           self.id.len() != self.lon.len() {
+
+            return Err(OsmBlockError::WrongNumberOfAttributes(
+                format!("Id: {} - Lat: {} - Lon: {}", self.id.len(), self.lat.len(), self.lon.len())
+            ));
+        }
+
+        for index in 0..self.id.len() {
+
+        }
+
+        println!("Ids: {}", self.id.len());
+        println!("lat: {}", self.lat.len());
+        println!("lon: {}", self.lon.len());
+        println!("keys_vals: {}", self.keys_vals.len());
+
+        /* TODO
+        if self.denseinfo.is_some() {
+            return Err(OsmBlockError::ParserNotImplemented("denseinfo"));
+        }
+        */
+
+        Ok(MapData::new())
     }
 }
 
 
 impl MapDataParser for protos::osmformat::Way {
 
-    fn parse(&self) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, _string_table: &StringTable) -> Result<MapData, OsmBlockError> {
 
          Err(OsmBlockError::ParserNotImplemented("Way"))
     }
@@ -135,7 +221,7 @@ impl MapDataParser for protos::osmformat::Way {
 
 impl MapDataParser for protos::osmformat::Relation {
 
-    fn parse(&self) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, _string_table: &StringTable) -> Result<MapData, OsmBlockError> {
 
         Err(OsmBlockError::ParserNotImplemented("Relation"))
     }

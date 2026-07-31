@@ -27,7 +27,9 @@ impl std::error::Error for BlobError {}
 
 #[derive(Debug)]
 pub enum OsmBlockError {
-    ParserNotImplemented(&'static str)
+    ParserNotImplemented(&'static str),
+    UnsupportedAttribute(&'static str, &'static str),
+    WrongNumberOfAttributes(String)
 }
 
 
@@ -94,6 +96,12 @@ impl std::fmt::Display for OsmBlockError {
          match self {
             OsmBlockError::ParserNotImplemented(msg) => {
                 write!(f, "Parser not implemented for {msg}")
+            }
+            OsmBlockError::UnsupportedAttribute(attr, data) => {
+                write!(f, "Unsupported attribute \"{attr}\" in {data}")
+            }
+            OsmBlockError::WrongNumberOfAttributes(msg) => {
+                write!(f, "Wrong number of attributes: {msg}")
             }
          }
      }

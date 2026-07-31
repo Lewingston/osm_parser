@@ -5,11 +5,12 @@ use std::rc::Rc;
 use std::cell::Ref;
 use std::cell::RefCell;
 
-mod feature;
+pub mod feature;
 
 pub use feature::Feature;
 pub use feature::FeatureSubType;
 
+use strum::IntoEnumIterator;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Id(pub u64);
@@ -228,9 +229,41 @@ impl Relation
 }
 
 
+#[derive(PartialEq)]
+pub struct Tag {
+
+    pub key:   String,
+    pub value: String
+}
+
+
+impl Tag {
+
+    #[must_use]
+    pub fn new(key: String, value: String) -> Self {
+
+        Self { key, value }
+    }
+
+    #[must_use]
+    pub fn to_feature(&self) -> Option<Feature> {
+
+        for feature in Feature::iter() {
+
+            if let Some(feature) = feature.create(&self.value) {
+                return Some(feature);
+            }
+        }
+
+        None
+    }
+}
+
+
 pub struct Tags {
 
-    pub features: Vec<Feature>
+    pub features:   Vec<Feature>,
+    pub other_tags: Vec<Tag>
 }
 
 

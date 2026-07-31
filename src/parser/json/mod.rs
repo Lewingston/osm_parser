@@ -12,7 +12,7 @@ use crate::map::{
     Relation
 };
 
-use serde_json::{Deserializer, Value};
+use serde_json as json;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -50,7 +50,7 @@ pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>>
 
 fn parse<R: std::io::Read>(reader: R) -> Result<MapData, Box<dyn std::error::Error>> {
 
-    let stream = Deserializer::from_reader(reader).into_iter::<Value>();
+    let stream = json::Deserializer::from_reader(reader).into_iter::<json::Value>();
 
     let mut map = MapData::create_empty_map();
 
