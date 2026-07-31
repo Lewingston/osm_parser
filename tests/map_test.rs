@@ -52,7 +52,7 @@ fn test_map_dimensions() {
     }
     "#;
 
-    match parser::from_string(json_data) {
+    match parser::json::from_string(json_data) {
         Ok(map_data) => {
 
             let dimensions = map_data.get_dimensions();

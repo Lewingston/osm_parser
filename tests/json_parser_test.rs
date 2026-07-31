@@ -19,7 +19,7 @@ fn test_node_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data) {
+    match parser::json::from_string(json_data) {
         Ok(map_data) => {
 
             let id = Id(1);
@@ -82,7 +82,7 @@ fn test_way_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data) {
+    match parser::json::from_string(json_data) {
         Ok(map_data) => {
 
             assert_eq!(map_data.nodes.len(), 3);
@@ -152,7 +152,7 @@ fn test_incomplete_way_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data) {
+    match parser::json::from_string(json_data) {
         Ok(map_data) => {
 
             let node = map_data.get_node(Id(1)).unwrap();
@@ -238,7 +238,7 @@ fn test_relation_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data) {
+    match parser::json::from_string(json_data) {
         Ok(map_data) => {
 
             assert_eq!(map_data.nodes.len(), 4);
@@ -319,7 +319,7 @@ fn test_relation_of_relations_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data) {
+    match parser::json::from_string(json_data) {
         Ok(map_data) => {
 
             assert_eq!(map_data.nodes.len(), 0);
@@ -405,7 +405,7 @@ fn incomplete_relation_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data_missing_node) {
+    match parser::json::from_string(json_data_missing_node) {
         Ok(map_data) => {
 
             let relation       = map_data.get_relation(Id(4)).unwrap();
@@ -476,7 +476,7 @@ fn incomplete_relation_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data_missing_way) {
+    match parser::json::from_string(json_data_missing_way) {
         Ok(map_data) => {
 
             let relation       = map_data.get_relation(Id(3)).unwrap();
@@ -542,7 +542,7 @@ fn incomplete_relation_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data_missing_relation) {
+    match parser::json::from_string(json_data_missing_relation) {
         Ok(map_data) => {
 
             let relation = map_data.get_relation(Id(3)).unwrap();
@@ -612,7 +612,7 @@ fn test_circular_relation_parsing() {
     }
     "#;
 
-    match parser::from_string(json_data) {
+    match parser::json::from_string(json_data) {
         Ok(map_data) => {
 
             let rel1 = map_data.get_relation(Id(1)).unwrap();
@@ -656,7 +656,7 @@ fn test_json_parser_fail() {
 
     let not_json_data = "This is not JSON!";
 
-    match parser::from_string(not_json_data) {
+    match parser::json::from_string(not_json_data) {
         Ok(_) => {
             assert!(false);
         }
