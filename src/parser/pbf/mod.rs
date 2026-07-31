@@ -8,6 +8,8 @@ mod error;
 use error::Error;
 use error::BlobError;
 
+mod osm_block;
+
 #[allow(warnings)]
 #[allow(clippy::all)]
 mod protos {
@@ -51,7 +53,8 @@ fn parse<R: std::io::Read>(mut reader: R) -> Result<MapData, Box<dyn std::error:
 
     let mut blob_count = 0;
 
-    while true {
+    //while true {
+    for _ in 0..2 {
 
         let mut buffer = [0; 4];
         match reader.read_exact(&mut buffer) {
@@ -85,7 +88,12 @@ fn read_blob<R: std::io::Read>(
 
     let blob_info = read_blob_header(reader, header_size, blob_num)?;
 
-    let _blob_data = read_blob_data(reader, blob_info.data_size)?;
+    let blob_data = read_blob_data(reader, blob_info.data_size)?;
+
+    match blob_info.type_ {
+        BlobType::OsmHeader => { parse_osm_header(&blob_data)?; }
+        BlobType::OsmData   => { osm_block::parse(&blob_data)?; }
+    }
 
     Ok(())
 }
@@ -102,7 +110,7 @@ fn read_blob_header<R: std::io::Read>(
 
     let blob_header = match BlobHeader::parse_from_bytes(&buffer) {
         Ok(blob) => { blob },
-        Err(err) => { println!("{err}"); return Err(Box::new(err)); }
+        Err(err) => { return Err(Box::new(err)); }
     };
 
     let Some(type_) = blob_header.type_ else {
@@ -229,3 +237,77 @@ fn zlib_return_code_to_string(code: zlib_rs::ReturnCode) ->  String {
         ReturnCode::VersionError => "Version Error".to_string()
     }
 }
+
+
+fn parse_osm_header(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+
+    use protos::osmformat::HeaderBlock;
+
+    let header = match HeaderBlock::parse_from_bytes(data) {
+        Ok(header) => { header },
+        Err(err)   => { return Err(Box::new(err)); }
+    };
+
+    println!("Required features:");
+    for feature in header.required_features {
+        println!("{feature}");
+    }
+
+    println!("Optional features:");
+    for feature in header.optional_features {
+        println!("{feature}");
+    }
+
+    Ok(())
+}
+
+
+/*
+fn parse_osm_data(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+
+    use protos::osmformat::PrimitiveBlock;
+
+    let block = match PrimitiveBlock::parse_from_bytes(data) {
+        Ok(block) => { block },
+        Err(err)  => { return Err(Box::new(err)); }
+    };
+
+    println!("String table: {}", block.stringtable.s.len());
+
+    println!("Primitive Groups: {}", block.primitivegroup.len());
+
+    for group in &block.primitivegroup {
+
+        if !group.nodes.is_empty() {
+            println!("Nodes: {}", group.nodes.len());
+        }
+
+        if group.dense.is_some() {
+            println!("Dense node block");
+        }
+
+        if !group.ways.is_empty() {
+            println!("Ways: {}", group.ways.len());
+        }
+
+        if !group.relations.is_empty() {
+            println!("Relations: {}", group.relations.len());
+        }
+    }
+
+    if let Some(gran) = block.granularity {
+        println!("Granularity: {}", gran);
+    }
+    if let Some(offset) = block.lat_offset {
+        println!("Offset latitude {}", offset);
+    }
+    if let Some(offset) = block.lon_offset {
+        println!("Offset longitude {}", offset);
+    }
+    if let Some(date_gran) = block.date_granularity {
+        println!("Date granularity: {}", date_gran);
+    }
+
+    Ok(())
+}
+*/

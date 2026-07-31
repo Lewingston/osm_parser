@@ -25,6 +25,14 @@ pub enum BlobError {
 impl std::error::Error for BlobError {}
 
 
+#[derive(Debug)]
+pub enum OsmBlockError {
+    ParserNotImplemented(String)
+}
+
+
+impl std::error::Error for OsmBlockError {}
+
 
 impl std::fmt::Display for Error {
 
@@ -76,5 +84,18 @@ impl std::fmt::Display for BlobError {
             }
         }
     }
+}
+
+
+impl std::fmt::Display for OsmBlockError {
+
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+
+         match self {
+            OsmBlockError::ParserNotImplemented(msg) => {
+                write!(f, "Parser not implemented for {msg}")
+            }
+         }
+     }
 }
 
