@@ -73,16 +73,16 @@ pub fn parse(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(gran) = block.granularity {
-        println!("Granularity: {}", gran);
+        println!("Granularity: {gran}");
     }
     if let Some(offset) = block.lat_offset {
-        println!("Offset latitude {}", offset);
+        println!("Offset latitude {offset}");
     }
     if let Some(offset) = block.lon_offset {
-        println!("Offset longitude {}", offset);
+        println!("Offset longitude {offset}");
     }
     if let Some(date_gran) = block.date_granularity {
-        println!("Date granularity: {}", date_gran);
+        println!("Date granularity: {date_gran}");
     }
 
     _ = block.parse();
@@ -110,7 +110,7 @@ impl MapDataParser for protos::osmformat::Node {
 
      fn parse(&self) -> Result<MapData, OsmBlockError> {
 
-         Err(OsmBlockError::ParserNotImplemented("Node".to_string()))
+         Err(OsmBlockError::ParserNotImplemented("Node"))
      }
 }
 
@@ -119,7 +119,7 @@ impl MapDataParser for protos::osmformat::DenseNodes {
 
     fn parse(&self) -> Result<MapData, OsmBlockError> {
 
-         Err(OsmBlockError::ParserNotImplemented("DenseNode".to_string()))
+         Err(OsmBlockError::ParserNotImplemented("DenseNode"))
     }
 }
 
@@ -128,7 +128,7 @@ impl MapDataParser for protos::osmformat::Way {
 
     fn parse(&self) -> Result<MapData, OsmBlockError> {
 
-         Err(OsmBlockError::ParserNotImplemented("Way".to_string()))
+         Err(OsmBlockError::ParserNotImplemented("Way"))
     }
 }
 
@@ -137,6 +137,6 @@ impl MapDataParser for protos::osmformat::Relation {
 
     fn parse(&self) -> Result<MapData, OsmBlockError> {
 
-        Err(OsmBlockError::ParserNotImplemented("Relation".to_string()))
+        Err(OsmBlockError::ParserNotImplemented("Relation"))
     }
 }

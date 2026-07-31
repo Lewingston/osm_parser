@@ -176,22 +176,22 @@ fn decompress_blob_data(blob: Blob) -> Result<Vec<u8>, BlobError>{
 
     match data {
         blob::Data::Raw(_) => {
-            Err(BlobError::CompressionNotSupported("Raw".to_string()))
+            Err(BlobError::CompressionNotSupported("Raw"))
         }
         blob::Data::ZlibData(data) => {
             uncompress_zlib(&data, raw_size)
         }
         blob::Data::LzmaData(_) => {
-            Err(BlobError::CompressionNotSupported("Lzma".to_string()))
+            Err(BlobError::CompressionNotSupported("Lzma"))
         }
         blob::Data::OBSOLETEBzip2Data(_) => {
-            Err(BlobError::CompressionNotSupported("Bzip2 (obsolete)".to_string()))
+            Err(BlobError::CompressionNotSupported("Bzip2 (obsolete)"))
         }
         blob::Data::Lz4Data(_) => {
-            Err(BlobError::CompressionNotSupported("Lz4".to_string()))
+            Err(BlobError::CompressionNotSupported("Lz4"))
         }
         blob::Data::ZstdData(_) => {
-            Err(BlobError::CompressionNotSupported("Zstd".to_string()))
+            Err(BlobError::CompressionNotSupported("Zstd"))
         }
     }
 }
@@ -221,20 +221,20 @@ fn uncompress_zlib(compressed_data: &[u8], raw_size: usize) -> Result<Vec<u8>, B
 }
 
 
-fn zlib_return_code_to_string(code: zlib_rs::ReturnCode) ->  String {
+fn zlib_return_code_to_string(code: zlib_rs::ReturnCode) -> &'static str {
 
     use zlib_rs::ReturnCode;
 
     match code {
-        ReturnCode::Ok           => "Ok".to_string(),
-        ReturnCode::StreamEnd    => "Stream end".to_string(),
-        ReturnCode::NeedDict     => "Need dict".to_string(),
-        ReturnCode::ErrNo        => "Err No".to_string(),
-        ReturnCode::StreamError  => "Stream Error".to_string(),
-        ReturnCode::DataError    => "Data Error".to_string(),
-        ReturnCode::MemError     => "Mem Error".to_string(),
-        ReturnCode::BufError     => "Buf Error".to_string(),
-        ReturnCode::VersionError => "Version Error".to_string()
+        ReturnCode::Ok           => "Ok",
+        ReturnCode::StreamEnd    => "Stream end",
+        ReturnCode::NeedDict     => "Need dict",
+        ReturnCode::ErrNo        => "Err No",
+        ReturnCode::StreamError  => "Stream Error",
+        ReturnCode::DataError    => "Data Error",
+        ReturnCode::MemError     => "Mem Error",
+        ReturnCode::BufError     => "Buf Error",
+        ReturnCode::VersionError => "Version Error"
     }
 }
 
@@ -260,54 +260,3 @@ fn parse_osm_header(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-
-/*
-fn parse_osm_data(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
-
-    use protos::osmformat::PrimitiveBlock;
-
-    let block = match PrimitiveBlock::parse_from_bytes(data) {
-        Ok(block) => { block },
-        Err(err)  => { return Err(Box::new(err)); }
-    };
-
-    println!("String table: {}", block.stringtable.s.len());
-
-    println!("Primitive Groups: {}", block.primitivegroup.len());
-
-    for group in &block.primitivegroup {
-
-        if !group.nodes.is_empty() {
-            println!("Nodes: {}", group.nodes.len());
-        }
-
-        if group.dense.is_some() {
-            println!("Dense node block");
-        }
-
-        if !group.ways.is_empty() {
-            println!("Ways: {}", group.ways.len());
-        }
-
-        if !group.relations.is_empty() {
-            println!("Relations: {}", group.relations.len());
-        }
-    }
-
-    if let Some(gran) = block.granularity {
-        println!("Granularity: {}", gran);
-    }
-    if let Some(offset) = block.lat_offset {
-        println!("Offset latitude {}", offset);
-    }
-    if let Some(offset) = block.lon_offset {
-        println!("Offset longitude {}", offset);
-    }
-    if let Some(date_gran) = block.date_granularity {
-        println!("Date granularity: {}", date_gran);
-    }
-
-    Ok(())
-}
-*/

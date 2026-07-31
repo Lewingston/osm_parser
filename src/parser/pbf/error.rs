@@ -17,9 +17,9 @@ pub enum BlobError {
     NoRawDataSize,
     DataSizeOutOfRange(i32),
     NoData,
-    CompressionNotSupported(String),
+    CompressionNotSupported(&'static str),
     DecompressedDataSizeMismatch,
-    ZlibDecompressionError(String)
+    ZlibDecompressionError(&'static str)
 }
 
 impl std::error::Error for BlobError {}
@@ -27,7 +27,7 @@ impl std::error::Error for BlobError {}
 
 #[derive(Debug)]
 pub enum OsmBlockError {
-    ParserNotImplemented(String)
+    ParserNotImplemented(&'static str)
 }
 
 
