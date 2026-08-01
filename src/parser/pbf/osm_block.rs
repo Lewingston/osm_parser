@@ -180,7 +180,7 @@ impl MapDataParser for protos::osmformat::Node {
 
 impl MapDataParser for protos::osmformat::DenseNodes {
 
-    fn parse(&self, _string_table: &StringTable) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, string_table: &StringTable) -> Result<MapData, OsmBlockError> {
 
         if self.id.len() != self.lat.len() ||
            self.id.len() != self.lon.len() {
@@ -190,14 +190,33 @@ impl MapDataParser for protos::osmformat::DenseNodes {
             ));
         }
 
-        for index in 0..self.id.len() {
-
-        }
-
         println!("Ids: {}", self.id.len());
         println!("lat: {}", self.lat.len());
         println!("lon: {}", self.lon.len());
         println!("keys_vals: {}", self.keys_vals.len());
+
+        let mut keys_vals = self.keys_vals.split(|&i| i == 0);
+
+        //for index in 0..self.id.len() {
+        for index in 0..32 {
+
+            //println!("Key vals: {:#?}", keys_vals.next());
+
+            let tags = string_table.get_dense_node_tags(keys_vals.next().unwrap());
+
+            println!("Tags: {:#?}", tags);
+        }
+
+        let zero_count = self.keys_vals.iter().
+            filter(|i| **i == 0).count();
+
+        /*
+        println!("Zero count: {zero_count}");
+
+        println!("{:#?}", &self.keys_vals[0..32]);
+        println!("...\n...\n...");
+        println!("{:#?}", &self.keys_vals[self.keys_vals.len() - 32..self.keys_vals.len()]);
+        */
 
         /* TODO
         if self.denseinfo.is_some() {

@@ -29,7 +29,10 @@ impl std::error::Error for BlobError {}
 pub enum OsmBlockError {
     ParserNotImplemented(&'static str),
     UnsupportedAttribute(&'static str, &'static str),
-    WrongNumberOfAttributes(String)
+    WrongNumberOfAttributes(String),
+    InvalidStringTableIndex(i32),
+    StringTableAccess(usize),
+    InvalidNumberOfDenseNodeStringTableIndexes(usize)
 }
 
 
@@ -102,6 +105,15 @@ impl std::fmt::Display for OsmBlockError {
             }
             OsmBlockError::WrongNumberOfAttributes(msg) => {
                 write!(f, "Wrong number of attributes: {msg}")
+            }
+            OsmBlockError::InvalidStringTableIndex(index) => {
+                write!(f, "Invalid string table index: {}", index)
+            }
+            OsmBlockError::StringTableAccess(index) => {
+                write!(f, "Unable to get string from string table: {index}")
+            },
+            OsmBlockError::InvalidNumberOfDenseNodeStringTableIndexes(count) => {
+                write!(f, "Wrong number of dense node string table indexes: {count}")
             }
          }
      }
