@@ -10,10 +10,17 @@ pub mod feature;
 pub use feature::Feature;
 pub use feature::FeatureSubType;
 
-use strum::IntoEnumIterator;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Id(pub u64);
+
+impl std::ops::Add<u64> for Id {
+
+    type Output = Id;
+
+    fn add(self, rhs: u64) -> Id {
+        Id(self.0 + rhs)
+    }
+}
 
 
 pub type NodeMap     = HashMap<Id, Rc<RefCell<Node>>>;
@@ -120,6 +127,22 @@ impl Node {
     pub fn get_parent_relation(&self, id: Id) -> Option<Ref<'_, Relation>> {
 
         self.parent_relations.get(&id).map(|relation| relation.borrow())
+    }
+}
+
+
+impl Default for Node {
+
+    fn default() -> Self {
+
+        Self {
+            id:               Id(0),
+            latitude:         0.0,
+            longitude:        0.0,
+            tags:             None,
+            parent_ways:      WayMap::new(),
+            parent_relations: RelationMap::new()
+        }
     }
 }
 
