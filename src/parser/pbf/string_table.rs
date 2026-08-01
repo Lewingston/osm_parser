@@ -21,17 +21,6 @@ impl<'table> StringTable<'table> {
             table
         };
 
-        /*
-        for index in 0..result.len() {
-            let Some(string) = result.get(index) else { continue; };
-            if string.is_empty() {
-                println!("[EMPTY]");
-            } else {
-                println!("{string}");
-            }
-        }
-        */
-
         Ok(result)
     }
 
@@ -100,6 +89,7 @@ impl<'table> StringTable<'table> {
     }
 
 
+    /*
     #[must_use]
     pub fn get_tags(&self) -> Result<map::Tags, OsmBlockError> {
 
@@ -115,4 +105,5 @@ impl<'table> StringTable<'table> {
 
         self.table.s.len()
     }
+    */
 }
