@@ -229,7 +229,7 @@ impl Relation
 }
 
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct Tag {
 
     pub key:   String,
@@ -247,6 +247,7 @@ impl Tag {
 }
 
 
+#[derive(Debug)]
 pub struct Tags {
 
     pub features:   Vec<Feature>,
