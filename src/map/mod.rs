@@ -13,12 +13,17 @@ pub use feature::FeatureSubType;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Id(pub u64);
 
-impl std::ops::Add<u64> for Id {
+impl std::ops::Add<i64> for Id {
 
     type Output = Id;
 
-    fn add(self, rhs: u64) -> Id {
-        Id(self.0 + rhs)
+    fn add(self, rhs: i64) -> Id {
+
+        if rhs < 0 {
+            Id(self.0 - rhs.abs() as u64)
+        } else {
+            Id(self.0 + rhs as u64)
+        }
     }
 }
 
@@ -167,7 +172,7 @@ impl Default for Node {
 pub struct Way {
 
     pub id:   Id,
-    pub tags: Option<Tags>,
+    pub tags: Option<Tags>, // TODO: Do not make tags optional!
 
     pub child_nodes:      Vec<WayNode>,
     pub parent_relations: RelationMap

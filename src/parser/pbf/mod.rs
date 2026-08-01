@@ -76,8 +76,7 @@ fn parse<R: std::io::Read>(mut reader: R) -> Result<PbfParserResult, Box<dyn std
 
     let mut blob_count = 0;
 
-    //while true {
-    for _ in 0..200 {
+    loop {
 
         let mut buffer = [0; 4];
         match reader.read_exact(&mut buffer) {

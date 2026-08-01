@@ -35,7 +35,10 @@ pub enum OsmBlockError {
     StringTableAccess(usize),
     InvalidNumberOfDenseNodeStringTableIndexes(usize),
     InvalidOsmId(String),
-    DenseNodeKeysValuesError
+    OsmIdUnderflow(u64, i64),
+    DenseNodeKeysValuesError,
+    MissingAttribute(&'static str),
+    NumberOfKeysAndValsMismatched(usize, usize)
 }
 
 
@@ -121,8 +124,17 @@ impl std::fmt::Display for OsmBlockError {
             OsmBlockError::InvalidOsmId(id) => {
                 write!(f, "Invalid OSM Id: {id}")
             }
+            OsmBlockError::OsmIdUnderflow(id1, id2) => {
+                write!(f, "Delta codes OSM Id underflow: {id1} - {id2}")
+            }
             OsmBlockError::DenseNodeKeysValuesError => {
                 write!(f, "Failed to access keys and values of dense node")
+            }
+            OsmBlockError::MissingAttribute(attr) => {
+                write!(f, "Missing attribute: {attr}")
+            }
+            OsmBlockError::NumberOfKeysAndValsMismatched(key_count, val_count) => {
+                write!(f, "Mismatch between number of keys {key_count} and values {val_count}")
             }
          }
      }

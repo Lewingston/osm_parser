@@ -12,7 +12,9 @@ use crate::map::{
     Id,
     Node,
     Way,
-    Relation
+    WayNode,
+    Relation,
+    RelationMap
 };
 
 use crate::parser::pbf::error::OsmBlockError;
@@ -61,6 +63,7 @@ pub fn parse(data: &[u8]) -> Result<Vec<BlockData>, Box<dyn std::error::Error>> 
         Err(err)  => { return Err(Box::new(err)); }
     };
 
+    /*
     println!("String table: {}", block.stringtable.s.len());
 
     println!("Primitive Groups: {}", block.primitivegroup.len());
@@ -96,14 +99,9 @@ pub fn parse(data: &[u8]) -> Result<Vec<BlockData>, Box<dyn std::error::Error>> 
     if let Some(date_gran) = block.date_granularity {
         println!("Date granularity: {date_gran}");
     }
+    */
 
     Ok(block.parse()?)
-}
-
-
-trait MapDataParser {
-
-    fn parse(&self, context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError>;
 }
 
 
@@ -131,7 +129,7 @@ impl PrimitiveBlockEx for PrimitiveBlock {
 
         for group in &self.primitivegroup {
 
-            result.append(&mut group.parse(&context)?);
+            result.push(group.parse(&context)?);
         }
 
         Ok(result)
@@ -141,34 +139,35 @@ impl PrimitiveBlockEx for PrimitiveBlock {
 
 trait PrimitiveGroupEx {
 
-    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Vec<BlockData>, OsmBlockError>;
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError>;
 }
 
 
 impl PrimitiveGroupEx for protos::osmformat::PrimitiveGroup {
 
-    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Vec<BlockData>, OsmBlockError> {
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
 
-        let mut result = Vec::<BlockData>::new();
-
-        for node in &self.nodes {
-
-            result.push(node.parse(context)?);
-        }
+        let mut result = BlockData::new();
 
         if let Some(dense_nodes) = &self.dense.0 {
 
-            result.push(dense_nodes.parse(context)?);
+            result.nodes = dense_nodes.parse(context)?;
         }
+
+        for node in &self.nodes {
+
+            result.nodes.push(node.parse(context)?);
+        }
+
 
         for way in &self.ways {
 
-            result.push(way.parse(context)?);
+            result.ways.push(way.parse(context)?);
         }
 
         for relation in &self.relations {
 
-            result.push(relation.parse(context)?);
+            result.relations.push(relation.parse(context)?);
         }
 
         if !self.changesets.is_empty() {
@@ -180,18 +179,32 @@ impl PrimitiveGroupEx for protos::osmformat::PrimitiveGroup {
 }
 
 
-impl MapDataParser for protos::osmformat::Node {
+trait OsmFormatNodeExt {
 
-     fn parse(&self, _context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Node>>, OsmBlockError>;
+}
+
+
+impl OsmFormatNodeExt for protos::osmformat::Node {
+
+     fn parse(&self, _context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Node>>, OsmBlockError> {
 
          Err(OsmBlockError::ParserNotImplemented("Node"))
      }
 }
 
 
-impl MapDataParser for protos::osmformat::DenseNodes {
+trait DenseNodesExt {
 
-    fn parse(&self, context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Nodes, OsmBlockError>;
+}
+
+
+impl DenseNodesExt for protos::osmformat::DenseNodes {
+
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Nodes, OsmBlockError> {
+
+        // TODO: Parse DenseInfo
 
         if self.id.len() != self.lat.len() ||
            self.id.len() != self.lon.len() {
@@ -201,7 +214,7 @@ impl MapDataParser for protos::osmformat::DenseNodes {
             ));
         }
 
-        let mut map_data = BlockData::new();
+        let mut nodes = Nodes::new();
 
         let mut keys_vals = self.keys_vals.split(|&i| i == 0);
 
@@ -217,11 +230,7 @@ impl MapDataParser for protos::osmformat::DenseNodes {
 
             let tags = context.string_table.get_dense_node_tags(keys_vals)?;
 
-            let Ok(current_id) = self.id[index].try_into() else {
-                return Err(OsmBlockError::InvalidOsmId(format!("{}", self.id[index])));
-            };
-
-            id = id + current_id;
+            id = delta_id(id, self.id[index])?;
 
             let granularity = i64::from(context.granularity);
             let lat = 0.000_000_001 * (context.lat_offset + (granularity * self.lat[index])) as f64;
@@ -238,27 +247,80 @@ impl MapDataParser for protos::osmformat::DenseNodes {
                 ..Default::default()
             };
 
-            map_data.nodes.push(Rc::new(RefCell::new(node)));
+            nodes.push(Rc::new(RefCell::new(node)));
         }
 
-        Ok(map_data)
+        Ok(nodes)
     }
 }
 
 
-impl MapDataParser for protos::osmformat::Way {
+trait OsmFormatWayExt {
 
-    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
-
-         Err(OsmBlockError::ParserNotImplemented("Way"))
-    }
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Way>>, OsmBlockError>;
 }
 
 
-impl MapDataParser for protos::osmformat::Relation {
+impl OsmFormatWayExt for protos::osmformat::Way {
 
-    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Way>>, OsmBlockError> {
+
+        let Some(id) = self.id else {
+            return Err(OsmBlockError::MissingAttribute("id"));
+        };
+
+        let Ok(id) = id.try_into() else {
+            return Err(OsmBlockError::InvalidOsmId(format!("{id}")));
+        };
+
+        let tags = context.string_table.get_tags(&self.keys, &self.vals)?;
+
+        // TODO: Parse Info
+
+        let mut child_nodes = Vec::<WayNode>::new();
+
+        let mut ref_id = Id(0);
+
+        for node_id in &self.refs {
+
+            ref_id = delta_id(ref_id, *node_id)?;
+            child_nodes.push(WayNode { id: ref_id, node: None });
+        }
+
+        if !self.lat.is_empty() || !self.lon.is_empty() {
+            return Err(OsmBlockError::ParserNotImplemented("LocationOnWays"));
+        }
+
+        Ok(Rc::new(RefCell::new(Way {
+            id:   Id(id),
+            tags: Some(tags),
+            child_nodes,
+            parent_relations: RelationMap::new()
+        })))
+   }
+}
+
+
+trait OsmFormatRelationExt {
+
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Relation>>, OsmBlockError>;
+}
+
+
+impl OsmFormatRelationExt for protos::osmformat::Relation {
+
+    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Relation>>, OsmBlockError> {
 
         Err(OsmBlockError::ParserNotImplemented("Relation"))
+    }
+}
+
+
+fn delta_id(id: Id, delta: i64) -> Result<Id, OsmBlockError> {
+
+    if delta < 0 && delta.abs() as u64 > id.0 {
+        Err(OsmBlockError::OsmIdUnderflow(id.0, delta))
+    } else {
+        Ok(id + delta)
     }
 }

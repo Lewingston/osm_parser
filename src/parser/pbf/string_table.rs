@@ -12,6 +12,12 @@ pub struct StringTable<'table> {
 }
 
 
+pub enum KeyValueResult {
+    Feature(map::Feature),
+    Tag(map::Tag)
+}
+
+
 impl<'table> StringTable<'table> {
 
 
@@ -40,6 +46,34 @@ impl<'table> StringTable<'table> {
     }
 
 
+    #[must_use]
+    pub fn get_tag_or_feature(
+        &self,
+        key_index: usize,
+        val_index: usize)
+    -> Result<KeyValueResult, OsmBlockError> {
+
+        let Some(key) = self.get(key_index) else {
+            return Err(OsmBlockError::StringTableAccess(key_index));
+        };
+        let Some(value) = self.get(val_index) else {
+            return Err(OsmBlockError::StringTableAccess(val_index));
+        };
+
+        match map::Feature::create(key, value) {
+            Some(feature) => { Ok(KeyValueResult::Feature(feature)) }
+            None => {
+                Ok(KeyValueResult::Tag(
+                    map::Tag {
+                        key:   key.to_string(),
+                        value: value.to_string()
+                    }
+                ))
+            }
+        }
+    }
+
+
     pub fn get_dense_node_tags(
         &self,
         keys_and_values: &[i32]
@@ -58,24 +92,16 @@ impl<'table> StringTable<'table> {
                 return Err(OsmBlockError::InvalidStringTableIndex(key_value[0]));
             };
 
-            let Ok(value_index) = key_value[1].try_into() else {
+            let Ok(val_index) = key_value[1].try_into() else {
                 return Err(OsmBlockError::InvalidStringTableIndex(key_value[1]));
             };
 
-            let Some(key) = self.get(key_index) else {
-                return Err(OsmBlockError::StringTableAccess(key_index));
-            };
-            let Some(value) = self.get(value_index) else {
-                return Err(OsmBlockError::StringTableAccess(value_index));
-            };
-
-            match map::Feature::create(key, value) {
-                Some(feature) => { features.push(feature); }
-                None => {
-                    other_tags.push(map::Tag {
-                        key:   key.to_string(),
-                        value: value.to_string()
-                    });
+            match self.get_tag_or_feature(key_index, val_index)? {
+                KeyValueResult::Feature(feature) => {
+                    features.push(feature);
+                }
+                KeyValueResult::Tag(tag) => {
+                    other_tags.push(tag);
                 }
             }
         }
@@ -87,21 +113,35 @@ impl<'table> StringTable<'table> {
     }
 
 
-    /*
     #[must_use]
-    pub fn get_tags(&self) -> Result<map::Tags, OsmBlockError> {
+    pub fn get_tags(
+        &self,
+        keys: &[u32],
+        vals: &[u32]
+    ) -> Result<map::Tags, OsmBlockError> {
+
+        if keys.len() != vals.len() {
+            return Err(OsmBlockError::NumberOfKeysAndValsMismatched(keys.len(), vals.len()));
+        }
+
+        let mut features   = Vec::<map::Feature>::new();
+        let mut other_tags = Vec::<map::Tag>::new();
+
+        for (key_index, val_index) in keys.iter().zip(vals.iter()) {
+
+            match self.get_tag_or_feature((*key_index) as usize, (*val_index) as usize)? {
+                KeyValueResult::Feature(feature) => {
+                    features.push(feature);
+                }
+                KeyValueResult::Tag(tag) => {
+                    other_tags.push(tag);
+                }
+            }
+        }
 
         Ok(map::Tags {
-            features: Vec::<map::Feature>::new(),
-            other_tags: Vec::<map::Tag>::new()
+            features,
+            other_tags
         })
     }
-
-
-    #[must_use]
-    pub fn len(&self) -> usize {
-
-        self.table.s.len()
-    }
-    */
 }
