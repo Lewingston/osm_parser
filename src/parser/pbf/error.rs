@@ -32,7 +32,8 @@ pub enum OsmBlockError {
     WrongNumberOfAttributes(String),
     InvalidStringTableIndex(i32),
     StringTableAccess(usize),
-    InvalidNumberOfDenseNodeStringTableIndexes(usize)
+    InvalidNumberOfDenseNodeStringTableIndexes(usize),
+    InvalidOsmId(String),
 }
 
 
@@ -111,9 +112,12 @@ impl std::fmt::Display for OsmBlockError {
             }
             OsmBlockError::StringTableAccess(index) => {
                 write!(f, "Unable to get string from string table: {index}")
-            },
+            }
             OsmBlockError::InvalidNumberOfDenseNodeStringTableIndexes(count) => {
                 write!(f, "Wrong number of dense node string table indexes: {count}")
+            }
+            OsmBlockError::InvalidOsmId(id) => {
+                write!(f, "Invalid OSM Id: {id}")
             }
          }
      }
