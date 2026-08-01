@@ -46,11 +46,11 @@ impl BlockData {
 
 struct PrimitiveBlockContext<'block> {
 
-    string_table:     StringTable<'block>,
-    granularity:      i32,
-    lat_offset:       i64,
-    lon_offset:       i64,
-    date_granularity: i32,
+    string_table:      StringTable<'block>,
+    granularity:       i32,
+    lat_offset:        i64,
+    lon_offset:        i64,
+    _date_granularity: i32,
 }
 
 
@@ -124,7 +124,7 @@ impl PrimitiveBlockEx for PrimitiveBlock {
             granularity:      self.granularity.unwrap_or(100),
             lat_offset:       self.lat_offset.unwrap_or(0),
             lon_offset:       self.lon_offset.unwrap_or(0),
-            date_granularity: self.date_granularity.unwrap_or(1000)
+            _date_granularity: self.date_granularity.unwrap_or(1000)
         };
 
         let mut result = Vec::<BlockData>::with_capacity(self.primitivegroup.len());
@@ -221,7 +221,7 @@ impl MapDataParser for protos::osmformat::DenseNodes {
 
             let granularity = context.granularity as i64;
             let lat = 0.000_000_001 * (context.lat_offset + (granularity as i64 * self.lat[index])) as f64;
-            let lon = 0.000_000_001 * (context.lon_offset + (granularity as i64 * self.lat[index])) as f64;
+            let lon = 0.000_000_001 * (context.lon_offset + (granularity as i64 * self.lon[index])) as f64;
 
             latitude  += lat;
             longitude += lon;
