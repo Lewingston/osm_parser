@@ -67,6 +67,26 @@ impl MapData {
     }
 
     #[must_use]
+    pub fn iter_nodes(&self) -> impl Iterator<Item = Ref<'_, Node>> {
+
+        self.nodes.values().map(|node| node.borrow())
+    }
+
+
+    #[must_use]
+    pub fn iter_ways(&self) -> impl Iterator<Item = Ref<'_, Way>> {
+
+        self.ways.values().map(|way| way.borrow())
+    }
+
+
+    #[must_use]
+    pub fn iter_relations(&self) -> impl Iterator<Item = Ref<'_, Relation>> {
+
+        self.relations.values().map(|relation| relation.borrow())
+    }
+
+    #[must_use]
     pub fn get_dimensions(&self) -> Dimensions {
 
         let mut min_lon = f64::MAX;
@@ -383,5 +403,28 @@ impl Dimensions {
     pub fn get_height(&self) -> f64 {
 
         self.max_lat - self.min_lat
+    }
+
+
+    pub fn expand(&mut self, dim: &Dimensions) {
+
+        self.min_lat = self.min_lat.min(dim.min_lat);
+        self.min_lon = self.min_lon.min(dim.min_lon);
+        self.max_lat = self.max_lat.max(dim.max_lat);
+        self.max_lon = self.max_lon.max(dim.max_lon);
+    }
+}
+
+
+impl Default for Dimensions {
+
+    fn default() -> Self {
+
+        Self {
+            min_lat: f64::MAX,
+            min_lon: f64::MAX,
+            max_lat: f64::MIN,
+            max_lon: f64::MIN
+        }
     }
 }
