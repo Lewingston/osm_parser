@@ -1740,9 +1740,10 @@ pub enum Feature {
 
 impl Feature {
 
+    #[must_use]
     pub fn create(type_: &str, sub_type: &str) -> Option<Self> {
 
-        if !type_.parse::<Feature>().is_ok() {
+        if type_.parse::<Feature>().is_err() {
             return None;
         }
 

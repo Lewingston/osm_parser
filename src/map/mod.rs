@@ -66,21 +66,18 @@ impl MapData {
         self.relations.get(&id).map(|relation| relation.borrow())
     }
 
-    #[must_use]
     pub fn iter_nodes(&self) -> impl Iterator<Item = Ref<'_, Node>> {
 
         self.nodes.values().map(|node| node.borrow())
     }
 
 
-    #[must_use]
     pub fn iter_ways(&self) -> impl Iterator<Item = Ref<'_, Way>> {
 
         self.ways.values().map(|way| way.borrow())
     }
 
 
-    #[must_use]
     pub fn iter_relations(&self) -> impl Iterator<Item = Ref<'_, Relation>> {
 
         self.relations.values().map(|relation| relation.borrow())

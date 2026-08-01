@@ -14,14 +14,12 @@ pub struct StringTable<'table> {
 
 impl<'table> StringTable<'table> {
 
-    #[must_use]
-    pub fn new(table: &'table protos::osmformat::StringTable) -> Result<Self, OsmBlockError> {
 
-        let result = Self {
+    pub fn new(table: &'table protos::osmformat::StringTable) -> Self {
+
+        Self {
             table
-        };
-
-        Ok(result)
+        }
     }
 
 
@@ -36,12 +34,12 @@ impl<'table> StringTable<'table> {
             Ok(result) => { Some(result) }
             Err(err)   => {
                 println!("Error getting string from string table. Index: {index} - Error: {err}");
-                return None;
+                None
             }
         }
     }
 
-    #[must_use]
+
     pub fn get_dense_node_tags(
         &self,
         keys_and_values: &[i32]
@@ -50,7 +48,7 @@ impl<'table> StringTable<'table> {
         let mut features   = Vec::<map::Feature>::new();
         let mut other_tags = Vec::<map::Tag>::new();
 
-        if keys_and_values.len() % 2 != 0 {
+        if !keys_and_values.len().is_multiple_of(2) {
             return Err(OsmBlockError::InvalidNumberOfDenseNodeStringTableIndexes(keys_and_values.len()))
         }
 

@@ -31,7 +31,7 @@ pub fn parse(tags: &Value) -> Option<Tags> {
                 features.push(feature);
             }
             None => {
-                other_tags.push(Tag::new(key.to_string(), value.to_string()));
+                other_tags.push(Tag::new(key.clone(), value.to_string()));
             }
         }
     }

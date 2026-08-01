@@ -5,6 +5,7 @@ pub enum Error {
     UnknownBlobHeaderType(String),
     BlobHeaderTypeMissing(usize),
     UnknownIndexDataInBlobHeader(usize),
+    #[allow(clippy::enum_variant_names)]
     BlobError(BlobError, usize)
 }
 
@@ -34,6 +35,7 @@ pub enum OsmBlockError {
     StringTableAccess(usize),
     InvalidNumberOfDenseNodeStringTableIndexes(usize),
     InvalidOsmId(String),
+    DenseNodeKeysValuesError
 }
 
 
@@ -108,7 +110,7 @@ impl std::fmt::Display for OsmBlockError {
                 write!(f, "Wrong number of attributes: {msg}")
             }
             OsmBlockError::InvalidStringTableIndex(index) => {
-                write!(f, "Invalid string table index: {}", index)
+                write!(f, "Invalid string table index: {index}")
             }
             OsmBlockError::StringTableAccess(index) => {
                 write!(f, "Unable to get string from string table: {index}")
@@ -118,6 +120,9 @@ impl std::fmt::Display for OsmBlockError {
             }
             OsmBlockError::InvalidOsmId(id) => {
                 write!(f, "Invalid OSM Id: {id}")
+            }
+            OsmBlockError::DenseNodeKeysValuesError => {
+                write!(f, "Failed to access keys and values of dense node")
             }
          }
      }

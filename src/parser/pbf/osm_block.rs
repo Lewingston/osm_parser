@@ -117,13 +117,13 @@ impl PrimitiveBlockEx for PrimitiveBlock {
 
     fn parse(&self) -> Result<Vec<BlockData>, OsmBlockError> {
 
-        let string_table = StringTable::new(&self.stringtable)?;
+        let string_table = StringTable::new(&self.stringtable);
 
         let context = PrimitiveBlockContext {
             string_table,
-            granularity:      self.granularity.unwrap_or(100),
-            lat_offset:       self.lat_offset.unwrap_or(0),
-            lon_offset:       self.lon_offset.unwrap_or(0),
+            granularity:       self.granularity.unwrap_or(100),
+            lat_offset:        self.lat_offset.unwrap_or(0),
+            lon_offset:        self.lon_offset.unwrap_or(0),
             _date_granularity: self.date_granularity.unwrap_or(1000)
         };
 
@@ -171,7 +171,7 @@ impl PrimitiveGroupEx for protos::osmformat::PrimitiveGroup {
             result.push(relation.parse(context)?);
         }
 
-        if self.changesets.len() > 0 {
+        if !self.changesets.is_empty() {
             return Err(OsmBlockError::UnsupportedAttribute("changesets", "PrimitiveGroup"));
         }
 
@@ -211,7 +211,11 @@ impl MapDataParser for protos::osmformat::DenseNodes {
 
         for index in 0..self.id.len() {
 
-            let tags = context.string_table.get_dense_node_tags(keys_vals.next().unwrap())?;
+            let Some(keys_vals) = keys_vals.next() else {
+                return Err(OsmBlockError::DenseNodeKeysValuesError);
+            };
+
+            let tags = context.string_table.get_dense_node_tags(keys_vals)?;
 
             let Ok(current_id) = self.id[index].try_into() else {
                 return Err(OsmBlockError::InvalidOsmId(format!("{}", self.id[index])));
@@ -219,9 +223,9 @@ impl MapDataParser for protos::osmformat::DenseNodes {
 
             id = id + current_id;
 
-            let granularity = context.granularity as i64;
-            let lat = 0.000_000_001 * (context.lat_offset + (granularity as i64 * self.lat[index])) as f64;
-            let lon = 0.000_000_001 * (context.lon_offset + (granularity as i64 * self.lon[index])) as f64;
+            let granularity = i64::from(context.granularity);
+            let lat = 0.000_000_001 * (context.lat_offset + (granularity * self.lat[index])) as f64;
+            let lon = 0.000_000_001 * (context.lon_offset + (granularity * self.lon[index])) as f64;
 
             latitude  += lat;
             longitude += lon;
@@ -233,13 +237,6 @@ impl MapDataParser for protos::osmformat::DenseNodes {
                 tags: Some(tags),
                 ..Default::default()
             };
-
-            /*
-            println!("Id: {:?}", node.id);
-            println!("Lat: {}", node.latitude);
-            println!("Lon: {}", node.longitude);
-            println!();
-            */
 
             map_data.nodes.push(Rc::new(RefCell::new(node)));
         }
