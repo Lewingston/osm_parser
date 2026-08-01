@@ -2,15 +2,10 @@
 use crate::map::{
     Tag,
     Tags,
-    Feature,
-    FeatureSubType
+    Feature
 };
 
 use serde_json::Value;
-
-use strum::IntoEnumIterator;
-
-type JsonObj = serde_json::Map<String, Value>;
 
 
 pub fn parse(tags: &Value) -> Option<Tags> {
@@ -19,8 +14,6 @@ pub fn parse(tags: &Value) -> Option<Tags> {
         println!("Tags element is not an JSON object!");
         return None
     };
-
-    //let features = get_features(tags);
 
     let mut features   = Vec::<Feature>::new();
     let mut other_tags = Vec::<Tag>::new();
@@ -33,20 +26,13 @@ pub fn parse(tags: &Value) -> Option<Tags> {
             continue;
         };
 
-        if key.parse::<Feature>().is_ok() {
-
-            match create_feature(key, value) {
-                Some(feature) => {
-                    features.push(feature);
-                }
-                None => {
-                    println!("{key} - {value}");
-                    other_tags.push(Tag::new(key.to_string(), value.to_string()));
-                }
-            };
-        } else {
-
-            other_tags.push(Tag::new(key.to_string(), value.to_string()))
+        match Feature::create(key, value) {
+            Some(feature) => {
+                features.push(feature);
+            }
+            None => {
+                other_tags.push(Tag::new(key.to_string(), value.to_string()));
+            }
         }
     }
 
@@ -54,17 +40,4 @@ pub fn parse(tags: &Value) -> Option<Tags> {
         features,
         other_tags
     })
-}
-
-
-fn create_feature(type_: &str, sub_type: &str) -> Option<Feature> {
-
-    for feature in Feature::iter() {
-
-        if type_ == feature.to_string() {
-            return feature.create(sub_type);
-        }
-    }
-
-    None
 }
