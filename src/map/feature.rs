@@ -5,6 +5,8 @@ use std::str::FromStr;
 use osm_parser_macros::FeatureSubType;
 use osm_parser_macros::feature_sub_type;
 
+use strum::IntoEnumIterator;
+
 use strum_macros::{
     EnumIter,
     EnumString,
@@ -1733,4 +1735,26 @@ pub enum Feature {
     Telecom(Telecom),
     Tourism(Tourism),
     Waterway(Waterway),
+}
+
+
+impl Feature {
+
+    pub fn create(type_: &str, sub_type: &str) -> Option<Self> {
+
+        if !type_.parse::<Feature>().is_ok() {
+            return None;
+        }
+
+        for feature in Feature::iter() {
+
+            if type_ == feature.to_string() {
+                return feature.create(sub_type);
+            }
+        }
+
+        println!("{type_} - {sub_type}");
+
+        None
+    }
 }
