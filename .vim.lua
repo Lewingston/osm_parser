@@ -33,7 +33,8 @@ vim.keymap.set('n', '<C-c>', function()
                  '-Wclippy::all ' ..
                  '-Wclippy::pedantic ' ..
                  '-Wclippy::unwrap_used ' ..
-                 '-Aclippy::module_inception')
+                 '-Aclippy::module_inception ' ..
+                 '-Aclippy::cast_precision_loss')
 end)
 
 
