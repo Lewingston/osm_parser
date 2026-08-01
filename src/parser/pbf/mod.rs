@@ -9,6 +9,9 @@ use error::Error;
 use error::BlobError;
 
 mod osm_block;
+
+pub use osm_block::BlockData;
+
 mod string_table;
 
 #[allow(warnings)]
@@ -21,6 +24,8 @@ use protos::fileformat::BlobHeader;
 use protos::fileformat::Blob;
 use protos::fileformat::blob;
 use protobuf::Message;
+
+use crate::parser;
 
 
 enum BlobType {
@@ -35,10 +40,16 @@ struct BlobInfo {
 }
 
 
+pub struct PbfParserResult {
+    pub map:    MapData,
+    pub blocks: Vec<BlockData>
+}
+
+
 /// # Errors
 ///
 /// Returns an error when parsing of the file failed.
-pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>> {
+pub fn from_file(file_name: &str) -> Result<PbfParserResult, Box<dyn std::error::Error>> {
 
     let file   = std::fs::File::open(file_name)?;
     let reader = std::io::BufReader::new(file);
@@ -48,9 +59,9 @@ pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>>
 
 
 
-fn parse<R: std::io::Read>(mut reader: R) -> Result<MapData, Box<dyn std::error::Error>> {
+fn parse<R: std::io::Read>(mut reader: R) -> Result<PbfParserResult, Box<dyn std::error::Error>> {
 
-    let map = MapData::create_empty_map();
+    let mut blocks = Vec::<BlockData>::new();
 
     let mut blob_count = 0;
 
@@ -63,7 +74,7 @@ fn parse<R: std::io::Read>(mut reader: R) -> Result<MapData, Box<dyn std::error:
 
                 let header_size = u32::from_be_bytes(buffer) as usize;
                 println!("Blob: {blob_count}");
-                read_blob(&mut reader, header_size, blob_count)?;
+                blocks.append(&mut read_blob(&mut reader, header_size, blob_count)?);
                 blob_count += 1;
                 println!();
 
@@ -77,7 +88,12 @@ fn parse<R: std::io::Read>(mut reader: R) -> Result<MapData, Box<dyn std::error:
         }
     }
 
-    Ok(map)
+    let map = create_map(&blocks);
+
+    Ok(PbfParserResult {
+        map,
+        blocks
+    })
 }
 
 
@@ -85,18 +101,21 @@ fn read_blob<R: std::io::Read>(
     reader:      &mut R,
     header_size: usize,
     blob_num:    usize
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<Vec<BlockData>, Box<dyn std::error::Error>> {
 
     let blob_info = read_blob_header(reader, header_size, blob_num)?;
 
     let blob_data = read_blob_data(reader, blob_info.data_size)?;
 
     match blob_info.type_ {
-        BlobType::OsmHeader => { parse_osm_header(&blob_data)?; }
-        BlobType::OsmData   => { osm_block::parse(&blob_data)?; }
+        BlobType::OsmHeader => {
+            parse_osm_header(&blob_data)?;
+            Ok(Vec::<BlockData>::new())
+        }
+        BlobType::OsmData   => {
+            osm_block::parse(&blob_data)
+        }
     }
-
-    Ok(())
 }
 
 
@@ -260,4 +279,34 @@ fn parse_osm_header(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+
+#[must_use]
+fn create_map(blocks: &[BlockData]) -> MapData {
+
+    let mut map = MapData::create_empty_map();
+
+    for block in blocks {
+
+        for node in &block.nodes {
+
+            map.nodes.insert(node.borrow().id, node.clone());
+        }
+
+        for way in &block.ways {
+
+            map.ways.insert(way.borrow().id, way.clone());
+        }
+
+        for relation in &block.relations {
+
+            map.relations.insert(relation.borrow().id, relation.clone());
+        }
+    }
+
+    parser::construct_ways(&mut map);
+    parser::construct_relations(&mut map);
+
+    map
 }

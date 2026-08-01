@@ -23,7 +23,7 @@ pub type Ways      = Vec<Rc<RefCell<Way>>>;
 pub type Relations = Vec<Rc<RefCell<Relation>>>;
 
 
-struct MapData {
+pub struct BlockData {
 
     pub nodes:     Nodes,
     pub ways:      Ways,
@@ -31,7 +31,7 @@ struct MapData {
 }
 
 
-impl MapData {
+impl BlockData {
 
     fn new() -> Self {
 
@@ -54,7 +54,7 @@ struct PrimitiveBlockContext<'block> {
 }
 
 
-pub fn parse(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn parse(data: &[u8]) -> Result<Vec<BlockData>, Box<dyn std::error::Error>> {
 
     let block = match PrimitiveBlock::parse_from_bytes(data) {
         Ok(block) => { block },
@@ -97,27 +97,25 @@ pub fn parse(data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
         println!("Date granularity: {date_gran}");
     }
 
-    block.parse()?;
-
-    Ok(())
+    Ok(block.parse()?)
 }
 
 
 trait MapDataParser {
 
-    fn parse(&self, context: &PrimitiveBlockContext) -> Result<MapData, OsmBlockError>;
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError>;
 }
 
 
 trait PrimitiveBlockEx {
 
-    fn parse(&self) -> Result<MapData, OsmBlockError>;
+    fn parse(&self) -> Result<Vec<BlockData>, OsmBlockError>;
 }
 
 
 impl PrimitiveBlockEx for PrimitiveBlock {
 
-    fn parse(&self) -> Result<MapData, OsmBlockError> {
+    fn parse(&self) -> Result<Vec<BlockData>, OsmBlockError> {
 
         let string_table = StringTable::new(&self.stringtable)?;
 
@@ -129,52 +127,62 @@ impl PrimitiveBlockEx for PrimitiveBlock {
             date_granularity: self.date_granularity.unwrap_or(1000)
         };
 
+        let mut result = Vec::<BlockData>::with_capacity(self.primitivegroup.len());
+
         for group in &self.primitivegroup {
 
-            group.parse(&context)?;
+            result.append(&mut group.parse(&context)?);
         }
 
-        Ok(MapData::new())
+        Ok(result)
     }
 }
 
 
-impl MapDataParser for protos::osmformat::PrimitiveGroup {
+trait PrimitiveGroupEx {
 
-    fn parse(&self, context: &PrimitiveBlockContext) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Vec<BlockData>, OsmBlockError>;
+}
+
+
+impl PrimitiveGroupEx for protos::osmformat::PrimitiveGroup {
+
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Vec<BlockData>, OsmBlockError> {
+
+        let mut result = Vec::<BlockData>::new();
 
         for node in &self.nodes {
 
-            node.parse(context)?;
+            result.push(node.parse(context)?);
         }
 
         if let Some(dense_nodes) = &self.dense.0 {
 
-            dense_nodes.parse(context)?;
+            result.push(dense_nodes.parse(context)?);
         }
 
         for way in &self.ways {
 
-            way.parse(context)?;
+            result.push(way.parse(context)?);
         }
 
         for relation in &self.relations {
 
-            relation.parse(context)?;
+            result.push(relation.parse(context)?);
         }
 
         if self.changesets.len() > 0 {
             return Err(OsmBlockError::UnsupportedAttribute("changesets", "PrimitiveGroup"));
         }
 
-        Ok(MapData::new())
+        Ok(result)
     }
 }
 
 
 impl MapDataParser for protos::osmformat::Node {
 
-     fn parse(&self, _context: &PrimitiveBlockContext) -> Result<MapData, OsmBlockError> {
+     fn parse(&self, _context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
 
          Err(OsmBlockError::ParserNotImplemented("Node"))
      }
@@ -183,7 +191,7 @@ impl MapDataParser for protos::osmformat::Node {
 
 impl MapDataParser for protos::osmformat::DenseNodes {
 
-    fn parse(&self, context: &PrimitiveBlockContext) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
 
         if self.id.len() != self.lat.len() ||
            self.id.len() != self.lon.len() {
@@ -193,7 +201,7 @@ impl MapDataParser for protos::osmformat::DenseNodes {
             ));
         }
 
-        let mut map_data = MapData::new();
+        let mut map_data = BlockData::new();
 
         let mut keys_vals = self.keys_vals.split(|&i| i == 0);
 
@@ -243,7 +251,7 @@ impl MapDataParser for protos::osmformat::DenseNodes {
 
 impl MapDataParser for protos::osmformat::Way {
 
-    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
 
          Err(OsmBlockError::ParserNotImplemented("Way"))
     }
@@ -252,7 +260,7 @@ impl MapDataParser for protos::osmformat::Way {
 
 impl MapDataParser for protos::osmformat::Relation {
 
-    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<MapData, OsmBlockError> {
+    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<BlockData, OsmBlockError> {
 
         Err(OsmBlockError::ParserNotImplemented("Relation"))
     }
