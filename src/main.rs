@@ -2,11 +2,16 @@
 pub mod parser;
 pub mod map;
 
-use std::collections::HashSet;
+//use std::collections::HashSet;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let data = parser::pbf::from_file("bremen-260728.osm.pbf")?;
+
+    println!("Blocks: {}",    data.blocks.len());
+    println!("Nodes: {}",     data.map.nodes.len());
+    println!("Ways: {}",      data.map.ways.len());
+    println!("Relations: {}", data.map.relations.len());
 
     /*
     let data = parser::json::from_file("bingen.json")?;
