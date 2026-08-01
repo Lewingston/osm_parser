@@ -46,6 +46,17 @@ pub struct PbfParserResult {
 }
 
 
+impl Default for PbfParserResult {
+
+    fn default() -> Self {
+        Self {
+            map:    MapData::create_empty_map(),
+            blocks: Vec::<BlockData>::new()
+        }
+    }
+}
+
+
 /// # Errors
 ///
 /// Returns an error when parsing of the file failed.
@@ -66,7 +77,7 @@ fn parse<R: std::io::Read>(mut reader: R) -> Result<PbfParserResult, Box<dyn std
     let mut blob_count = 0;
 
     //while true {
-    for _ in 0..2 {
+    for _ in 0..200 {
 
         let mut buffer = [0; 4];
         match reader.read_exact(&mut buffer) {
