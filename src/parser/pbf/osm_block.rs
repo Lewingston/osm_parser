@@ -14,11 +14,18 @@ use crate::map::{
     Way,
     WayNode,
     Relation,
-    RelationMap
+    RelationMap,
+    RelationMembers,
+    RelationNode,
+    RelationWay,
+    RelationRelation,
+    RelationMemberRole
 };
 
 use crate::parser::pbf::error::OsmBlockError;
 use crate::parser::pbf::string_table::StringTable;
+
+use std::str::FromStr;
 
 pub type Nodes     = Vec<Rc<RefCell<Node>>>;
 pub type Ways      = Vec<Rc<RefCell<Way>>>;
@@ -62,44 +69,6 @@ pub fn parse(data: &[u8]) -> Result<Vec<BlockData>, Box<dyn std::error::Error>> 
         Ok(block) => { block },
         Err(err)  => { return Err(Box::new(err)); }
     };
-
-    /*
-    println!("String table: {}", block.stringtable.s.len());
-
-    println!("Primitive Groups: {}", block.primitivegroup.len());
-
-    for group in &block.primitivegroup {
-
-        if !group.nodes.is_empty() {
-            println!("Nodes: {}", group.nodes.len());
-        }
-
-        if group.dense.is_some() {
-            println!("Dense node block");
-        }
-
-        if !group.ways.is_empty() {
-            println!("Ways: {}", group.ways.len());
-        }
-
-        if !group.relations.is_empty() {
-            println!("Relations: {}", group.relations.len());
-        }
-    }
-
-    if let Some(gran) = block.granularity {
-        println!("Granularity: {gran}");
-    }
-    if let Some(offset) = block.lat_offset {
-        println!("Offset latitude {offset}");
-    }
-    if let Some(offset) = block.lon_offset {
-        println!("Offset longitude {offset}");
-    }
-    if let Some(date_gran) = block.date_granularity {
-        println!("Date granularity: {date_gran}");
-    }
-    */
 
     Ok(block.parse()?)
 }
@@ -159,7 +128,6 @@ impl PrimitiveGroupEx for protos::osmformat::PrimitiveGroup {
             result.nodes.push(node.parse(context)?);
         }
 
-
         for way in &self.ways {
 
             result.ways.push(way.parse(context)?);
@@ -210,7 +178,10 @@ impl DenseNodesExt for protos::osmformat::DenseNodes {
            self.id.len() != self.lon.len() {
 
             return Err(OsmBlockError::WrongNumberOfAttributes(
-                format!("Id: {} - Lat: {} - Lon: {}", self.id.len(), self.lat.len(), self.lon.len())
+                format!("DenseNode - Id: {} - Lat: {} - Lon: {}",
+                    self.id.len(),
+                    self.lat.len(),
+                    self.lon.len())
             ));
         }
 
@@ -265,19 +236,20 @@ impl OsmFormatWayExt for protos::osmformat::Way {
 
     fn parse(&self, context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Way>>, OsmBlockError> {
 
-        let Some(id) = self.id else {
-            return Err(OsmBlockError::MissingAttribute("id"));
-        };
-
-        let Ok(id) = id.try_into() else {
-            return Err(OsmBlockError::InvalidOsmId(format!("{id}")));
-        };
+        let id = osm_id_from_opt_i64(self.id)?;
 
         let tags = context.string_table.get_tags(&self.keys, &self.vals)?;
 
         // TODO: Parse Info
 
         let mut child_nodes = Vec::<WayNode>::new();
+
+        /*
+        // There might to many ways without nodes to print them
+        if child_nodes.is_empty() {
+            println!("Way without members: {:#?}", id);
+        }
+        */
 
         let mut ref_id = Id(0);
 
@@ -292,7 +264,7 @@ impl OsmFormatWayExt for protos::osmformat::Way {
         }
 
         Ok(Rc::new(RefCell::new(Way {
-            id:   Id(id),
+            id,
             tags: Some(tags),
             child_nodes,
             parent_relations: RelationMap::new()
@@ -304,14 +276,118 @@ impl OsmFormatWayExt for protos::osmformat::Way {
 trait OsmFormatRelationExt {
 
     fn parse(&self, context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Relation>>, OsmBlockError>;
+
+    fn get_members(
+        &self,
+        context: &PrimitiveBlockContext,
+        relation_id: Id)
+    -> Result<RelationMembers, OsmBlockError>;
 }
 
 
 impl OsmFormatRelationExt for protos::osmformat::Relation {
 
-    fn parse(&self, _context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Relation>>, OsmBlockError> {
+    fn parse(&self, context: &PrimitiveBlockContext) -> Result<Rc<RefCell<Relation>>, OsmBlockError> {
 
-        Err(OsmBlockError::ParserNotImplemented("Relation"))
+        let id = osm_id_from_opt_i64(self.id)?;
+
+        let tags = context.string_table.get_tags(&self.keys, &self.vals)?;
+
+        // TODO: Parse info
+
+        let members = self.get_members(context, id)?;
+
+        Ok(Rc::new(RefCell::new(Relation {
+            id,
+            tags: Some(tags),
+            members,
+            parent_relations: RelationMap::new()
+        })))
+    }
+
+
+    fn get_members(
+        &self,
+        context: &PrimitiveBlockContext,
+        relation_id: Id
+    ) -> Result<RelationMembers, OsmBlockError> {
+
+        use protos::osmformat::relation::MemberType;
+
+        if self.memids.len() != self.roles_sid.len() ||
+           self.memids.len() != self.types.len() {
+
+            return Err(OsmBlockError::WrongNumberOfAttributes(
+                format!("Relation members - Ids: {} - Roles: {} - Types: {}",
+                    self.memids.len(),
+                    self.roles_sid.len(),
+                    self.types.len())
+            ));
+        }
+
+        if self.memids.is_empty() {
+            return Err(OsmBlockError::RelationWithoutMembers(relation_id.0));
+        }
+
+        let mut members = RelationMembers::new();
+
+        let mut id = Id(0);
+
+        for ((ref_id, role_sid), type_) in
+            self.memids.iter()
+            .zip(self.roles_sid.iter())
+            .zip(self.types.iter()) {
+
+            id = delta_id(id, *ref_id)?;
+
+            let Ok(role_sid) = (*role_sid).try_into() else {
+                return Err(OsmBlockError::InvalidOsmId(format!("{}", *role_sid)));
+            };
+
+            let Some(role) = context.string_table.get(role_sid) else {
+                return Err(OsmBlockError::StringTableAccess(role_sid));
+            };
+
+            let role = match RelationMemberRole::from_str(role) {
+                Ok(role) => { role },
+                Err(_) => {
+                    println!("Unknown relation member role: {:#?}", role);
+                    RelationMemberRole::None
+                }
+            };
+
+            match type_.enum_value() {
+                Ok(MemberType::NODE) => {
+
+                    members.nodes.push(RelationNode {
+                        node: None,
+                        id,
+                        role
+                    });
+                }
+                Ok(MemberType::WAY) => {
+
+                    members.ways.push(RelationWay {
+                        way: None,
+                        id,
+                        role
+                    });
+                }
+                Ok(MemberType::RELATION) => {
+
+                    members.relations.push(RelationRelation {
+                        relation: None,
+                        id,
+                        role
+                    });
+                }
+                Err(value) => {
+                    return Err(OsmBlockError::UnknownRelationTypeId(value));
+                }
+            }
+        }
+
+        Ok(members)
     }
 }
 
@@ -323,4 +399,18 @@ fn delta_id(id: Id, delta: i64) -> Result<Id, OsmBlockError> {
     } else {
         Ok(id + delta)
     }
+}
+
+
+fn osm_id_from_opt_i64(opt_id: Option<i64>) -> Result<Id, OsmBlockError> {
+
+    let Some(id) = opt_id else {
+        return Err(OsmBlockError::MissingAttribute("id"));
+    };
+
+    let Ok(id) = id.try_into() else {
+        return Err(OsmBlockError::InvalidOsmId(format!("{id}")));
+    };
+
+    Ok(Id(id))
 }

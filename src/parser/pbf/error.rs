@@ -38,7 +38,9 @@ pub enum OsmBlockError {
     OsmIdUnderflow(u64, i64),
     DenseNodeKeysValuesError,
     MissingAttribute(&'static str),
-    NumberOfKeysAndValsMismatched(usize, usize)
+    NumberOfKeysAndValsMismatched(usize, usize),
+    RelationWithoutMembers(u64),
+    UnknownRelationTypeId(i32)
 }
 
 
@@ -135,6 +137,12 @@ impl std::fmt::Display for OsmBlockError {
             }
             OsmBlockError::NumberOfKeysAndValsMismatched(key_count, val_count) => {
                 write!(f, "Mismatch between number of keys {key_count} and values {val_count}")
+            }
+            OsmBlockError::RelationWithoutMembers(id) => {
+                write!(f, "Relation ({id}) without members")
+            }
+            OsmBlockError::UnknownRelationTypeId(id) => {
+                write!(f, "Unknown relation type id {id}")
             }
          }
      }
