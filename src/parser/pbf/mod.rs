@@ -83,10 +83,8 @@ fn parse<R: std::io::Read>(mut reader: R) -> Result<PbfParserResult, Box<dyn std
             Ok(()) => {
 
                 let header_size = u32::from_be_bytes(buffer) as usize;
-                println!("Blob: {blob_count}");
                 blocks.append(&mut read_blob(&mut reader, header_size, blob_count)?);
                 blob_count += 1;
-                println!();
 
             }
             Err(err) => match err.kind() {
