@@ -20,9 +20,9 @@ impl std::ops::Add<i64> for Id {
     fn add(self, rhs: i64) -> Id {
 
         if rhs < 0 {
-            Id(self.0 - rhs.abs() as u64)
+            Id(self.0 - rhs.unsigned_abs())
         } else {
-            Id(self.0 + rhs as u64)
+            Id(self.0 + rhs.cast_unsigned())
         }
     }
 }
@@ -125,6 +125,28 @@ impl MapData {
 }
 
 
+impl Drop for MapData
+{
+    fn drop(&mut self) {
+
+        for node in self.nodes.values() {
+
+            node.borrow_mut().clear();
+        }
+
+        for way in self.ways.values() {
+
+            way.borrow_mut().clear();
+        }
+
+        for relation in self.relations.values() {
+
+            relation.borrow_mut().clear();
+        }
+    }
+}
+
+
 pub struct Node {
 
     pub id:        Id,
@@ -149,6 +171,13 @@ impl Node {
     pub fn get_parent_relation(&self, id: Id) -> Option<Ref<'_, Relation>> {
 
         self.parent_relations.get(&id).map(|relation| relation.borrow())
+    }
+
+
+    fn clear(&mut self) {
+
+        self.parent_ways.clear();
+        self.parent_relations.clear();
     }
 }
 
@@ -197,6 +226,12 @@ impl Way {
     pub fn is_complete(&self) -> bool {
 
         !self.child_nodes.iter().any(|way_node| way_node.node.is_none())
+    }
+
+    fn clear(&mut self) {
+
+        self.child_nodes.clear();
+        self.parent_relations.clear();
     }
 }
 
@@ -271,6 +306,13 @@ impl Relation
 
         true
     }
+
+
+    fn clear(&mut self) {
+
+        self.members.clear();
+        self.parent_relations.clear();
+    }
 }
 
 
@@ -308,6 +350,7 @@ pub struct RelationMembers {
 }
 
 
+#[allow(clippy::new_without_default)]
 impl RelationMembers {
 
     #[must_use]
@@ -317,6 +360,13 @@ impl RelationMembers {
             ways:      Vec::<RelationWay>::new(),
             relations: Vec::<RelationRelation>::new()
         }
+    }
+
+    fn clear(&mut self) {
+
+        self.nodes.clear();
+        self.ways.clear();
+        self.relations.clear();
     }
 }
 
