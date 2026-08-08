@@ -27,6 +27,8 @@ use protobuf::Message;
 
 use crate::parser;
 
+use std::path::Path;
+
 
 enum BlobType {
     OsmHeader,
@@ -60,9 +62,9 @@ impl Default for PbfParserResult {
 /// # Errors
 ///
 /// Returns an error when parsing of the file failed.
-pub fn from_file(file_name: &str) -> Result<PbfParserResult, Box<dyn std::error::Error>> {
+pub fn from_file<P: AsRef<Path>>(path: P) -> Result<PbfParserResult, Box<dyn std::error::Error>> {
 
-    let file   = std::fs::File::open(file_name)?;
+    let file   = std::fs::File::open(path)?;
     let reader = std::io::BufReader::new(file);
 
     parse(reader)

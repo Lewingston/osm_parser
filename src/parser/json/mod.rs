@@ -15,6 +15,8 @@ use serde_json as json;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use std::path::Path;
+
 enum OsmPrimitive {
     Node(Node),
     Way(Way),
@@ -39,9 +41,9 @@ pub fn from_string(str: &str) -> Result<MapData, Box<dyn std::error::Error>> {
 /// # Errors
 ///
 /// Will return an error if parsing JSON file failed.
-pub fn from_file(file_name: &str) -> Result<MapData, Box<dyn std::error::Error>> {
+pub fn from_file<P: AsRef<Path>>(path: P) -> Result<MapData, Box<dyn std::error::Error>> {
 
-    let file   = std::fs::File::open(file_name)?;
+    let file   = std::fs::File::open(path)?;
     let reader = std::io::BufReader::new(file);
 
     parse(reader)
