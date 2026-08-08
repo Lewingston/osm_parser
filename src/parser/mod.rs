@@ -15,6 +15,31 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 
+struct ParserSettings
+{
+    parse_nodes:     bool,
+    parse_ways:      bool,
+    parse_relations: bool,
+    parse_types:     bool,
+    parse_tags:      bool,
+}
+
+
+impl std::default::Default for ParserSettings
+{
+    fn default() -> Self {
+
+        Self {
+            parse_nodes:     true,
+            parse_ways:      true,
+            parse_relations: true,
+            parse_types:     true,
+            parse_tags:      true
+        }
+    }
+}
+
+
 pub fn construct_ways(map: &mut MapData) {
 
     for way in &mut map.ways.values_mut() {
