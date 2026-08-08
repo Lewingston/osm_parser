@@ -348,12 +348,9 @@ impl OsmFormatRelationExt for protos::osmformat::Relation {
                 return Err(OsmBlockError::StringTableAccess(role_sid));
             };
 
-            let role = match RelationMemberRole::from_str(role) {
-                Ok(role) => { role },
-                Err(_) => {
-                    println!("Unknown relation member role: {:#?}", role);
-                    RelationMemberRole::None
-                }
+            let role = if let Ok(role) = RelationMemberRole::from_str(role) { role } else {
+                println!("Unknown relation member role: {role:#?}");
+                RelationMemberRole::None
             };
 
             match type_.enum_value() {
@@ -394,7 +391,7 @@ impl OsmFormatRelationExt for protos::osmformat::Relation {
 
 fn delta_id(id: Id, delta: i64) -> Result<Id, OsmBlockError> {
 
-    if delta < 0 && delta.abs() as u64 > id.0 {
+    if delta < 0 && delta.unsigned_abs() > id.0 {
         Err(OsmBlockError::OsmIdUnderflow(id.0, delta))
     } else {
         Ok(id + delta)

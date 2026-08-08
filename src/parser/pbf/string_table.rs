@@ -46,7 +46,6 @@ impl<'table> StringTable<'table> {
     }
 
 
-    #[must_use]
     pub fn get_tag_or_feature(
         &self,
         key_index: usize,
@@ -113,7 +112,6 @@ impl<'table> StringTable<'table> {
     }
 
 
-    #[must_use]
     pub fn get_tags(
         &self,
         keys: &[u32],
