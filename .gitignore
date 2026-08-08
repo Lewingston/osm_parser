@@ -1,2 +1,4 @@
 /target
 /osm_parser_macros/target*
+*.json
+*.pbf
