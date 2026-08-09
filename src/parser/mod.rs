@@ -122,6 +122,11 @@ fn construct_nested_relation(
     for relation_relation in &mut relation.borrow_mut().members.relations {
 
         let child_id = relation_relation.id;
+        if parent_id == child_id {
+            println!("Relation is its own member {parent_id:?}");
+            continue;
+        }
+
         let Some(child_relation) = relations.get(&child_id) else { continue; };
         child_relation.borrow_mut().parent_relations.insert(parent_id, relation.clone());
         relation_relation.relation = Some(child_relation.clone());
